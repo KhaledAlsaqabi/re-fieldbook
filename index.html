@@ -1,0 +1,1090 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Offensive Fieldbook — Reverse Engineering &amp; Cryptography</title>
+<meta name="description" content="A dense reference for binary reverse engineering and applied cryptography: triage, tooling, hotkeys, attack patterns, and working exploit/solver code.">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🧩</text></svg>">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+<style>
+:root{
+  --paper:#eef1f4; --paper-raised:#ffffff; --paper-sunk:#e4e9ed;
+  --text:#161b22; --text-soft:#4d5b68; --text-faint:#8291a0;
+  --line:#d3dae1; --line-strong:#b7c1cb;
+  --accent:#a8621a; --accent-soft:#c98a3e; --accent-wash:#f3e3d2;
+  --accent2:#3c6e97; --accent2-wash:#dbe8f1;
+  --ok:#3f7d5c; --warn:#b5442e; --info:#3c6e97;
+  --code-bg:#e6ebef; --code-text:#1c2530; --code-key:#a8621a; --code-str:#3f7d5c; --code-com:#8291a0;
+  --shadow: 0 1px 2px rgba(20,30,40,.06), 0 8px 24px -12px rgba(20,30,40,.18);
+  --radius: 3px;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --paper:#12161c; --paper-raised:#171d25; --paper-sunk:#0e1217;
+    --text:#e4e9ee; --text-soft:#a7b3bf; --text-faint:#66727e;
+    --line:#28323d; --line-strong:#374252;
+    --accent:#e0964a; --accent-soft:#c9853f; --accent-wash:#2c2115;
+    --accent2:#7ab3dd; --accent2-wash:#132531;
+    --ok:#6cb894; --warn:#e08065; --info:#7ab3dd;
+    --code-bg:#0d1116; --code-text:#dbe2e8; --code-key:#e0964a; --code-str:#7fc7a0; --code-com:#66727e;
+    --shadow: 0 1px 2px rgba(0,0,0,.4), 0 8px 24px -12px rgba(0,0,0,.6);
+  }
+}
+:root[data-theme="dark"]{
+  --paper:#12161c; --paper-raised:#171d25; --paper-sunk:#0e1217;
+  --text:#e4e9ee; --text-soft:#a7b3bf; --text-faint:#66727e;
+  --line:#28323d; --line-strong:#374252;
+  --accent:#e0964a; --accent-soft:#c9853f; --accent-wash:#2c2115;
+  --accent2:#7ab3dd; --accent2-wash:#132531;
+  --ok:#6cb894; --warn:#e08065; --info:#7ab3dd;
+  --code-bg:#0d1116; --code-text:#dbe2e8; --code-key:#e0964a; --code-str:#7fc7a0; --code-com:#66727e;
+  --shadow: 0 1px 2px rgba(0,0,0,.4), 0 8px 24px -12px rgba(0,0,0,.6);
+}
+*{box-sizing:border-box;}
+html{scroll-behavior:smooth;}
+body{
+  margin:0; background:var(--paper); color:var(--text);
+  font-family:"IBM Plex Sans", ui-sans-serif, system-ui, sans-serif;
+  font-size:15.5px; line-height:1.62;
+}
+::selection{ background:var(--accent-wash); color:var(--text); }
+a{ color:var(--accent); text-decoration:none; border-bottom:1px solid var(--accent-soft); }
+a:hover{ color:var(--accent-soft); }
+code, pre, kbd, .mono{ font-family:"IBM Plex Mono", ui-monospace, "SFMono-Regular", monospace; }
+h1,h2,h3,h4{ font-family:"IBM Plex Sans", sans-serif; font-weight:700; text-wrap:balance; letter-spacing:-0.01em; color:var(--text); }
+:focus-visible{ outline:2px solid var(--accent); outline-offset:2px; }
+@media (prefers-reduced-motion: reduce){ html{scroll-behavior:auto;} }
+
+/* ---------- theme toggle ---------- */
+.theme-toggle{ position:fixed; top:14px; right:16px; z-index:50; display:flex; gap:4px; background:var(--paper-raised); border:1px solid var(--line); border-radius:20px; padding:3px; box-shadow:var(--shadow); }
+.theme-toggle button{ font-family:"IBM Plex Mono"; font-size:11px; border:none; background:none; color:var(--text-faint); padding:5px 10px; border-radius:16px; cursor:pointer; }
+.theme-toggle button.active{ background:var(--accent-wash); color:var(--accent); }
+
+/* ---------- shell ---------- */
+.shell{ display:flex; max-width:1360px; margin:0 auto; align-items:flex-start; }
+.toc{
+  position:sticky; top:0; align-self:flex-start; height:100vh; overflow-y:auto;
+  width:264px; flex:none; padding:28px 18px 40px 28px; border-right:1px solid var(--line);
+  scrollbar-width:thin;
+}
+.toc::-webkit-scrollbar{width:8px;}
+.toc::-webkit-scrollbar-thumb{background:var(--line-strong); border-radius:4px;}
+.toc .brand{ display:flex; align-items:baseline; gap:8px; margin-bottom:4px;}
+.toc .brand .mark{ width:10px; height:10px; background:var(--accent); flex:none; border-radius:1px; transform:rotate(45deg);}
+.toc .brand b{ font-size:13.5px; letter-spacing:.02em; }
+.toc .tagline{ font-size:11.5px; color:var(--text-faint); margin:0 0 22px; padding-left:18px; }
+.toc .part-label{ font-family:"IBM Plex Mono"; font-size:10.5px; text-transform:uppercase; letter-spacing:.1em; color:var(--text-faint); margin:20px 0 6px; padding-left:8px; }
+.toc .part-label.cy{ color:var(--accent2); }
+.toc nav{ font-size:13px; }
+.toc .grp{ margin-bottom:3px; }
+.toc .grp > a{ display:flex; gap:8px; padding:6px 8px; border-radius:var(--radius); border:none; color:var(--text-soft); font-weight:600;}
+.toc .grp > a span.n{ color:var(--accent); font-variant-numeric:tabular-nums; width:16px; flex:none;}
+.toc .grp.cy > a span.n{ color:var(--accent2); }
+.toc .grp > a:hover{ background:var(--paper-raised); color:var(--text); }
+.toc .sub{ list-style:none; margin:0 0 8px; padding:0 0 0 32px; }
+.toc .sub li a{ display:block; padding:3px 8px; border:none; color:var(--text-faint); font-size:12.3px; border-radius:var(--radius); line-height:1.5;}
+.toc .sub li a:hover{ background:var(--paper-raised); color:var(--accent); }
+
+main{ flex:1; min-width:0; padding:0 0 120px; }
+.hero{ padding:56px 52px 34px; border-bottom:1px solid var(--line); }
+.hero .eyebrow{ font-size:11.5px; letter-spacing:.14em; text-transform:uppercase; color:var(--accent); font-weight:600; margin-bottom:14px;}
+.hero h1{ font-size:clamp(30px,4vw,42px); margin:0 0 14px; line-height:1.08; }
+.hero p.lede{ font-size:16.5px; color:var(--text-soft); max-width:66ch; margin:0 0 22px; }
+.hero .stats{ display:flex; gap:26px; flex-wrap:wrap; }
+.hero .stats div{ font-size:11.5px; color:var(--text-faint); }
+.hero .stats b{ display:block; font-size:19px; color:var(--text); font-variant-numeric:tabular-nums; font-family:"IBM Plex Mono"; }
+.hero .parts{ display:flex; gap:14px; margin-top:26px; flex-wrap:wrap; }
+.hero .parts a{ border:1px solid var(--line-strong); border-radius:var(--radius); padding:12px 18px; color:var(--text); font-weight:600; font-size:13.5px; display:flex; align-items:center; gap:10px; }
+.hero .parts a .dot{ width:8px; height:8px; border-radius:50%; background:var(--accent); flex:none; }
+.hero .parts a.cy .dot{ background:var(--accent2); }
+.hero .parts a:hover{ background:var(--paper-raised); }
+
+.part-title{ padding:40px 52px 8px; }
+.part-title .eyebrow{ font-size:11.5px; letter-spacing:.14em; text-transform:uppercase; font-weight:700; margin-bottom:8px;}
+.part-title.re .eyebrow{ color:var(--accent); }
+.part-title.cy .eyebrow{ color:var(--accent2); }
+.part-title h1{ font-size:30px; margin:0 0 8px; }
+.part-title p{ color:var(--text-soft); max-width:66ch; margin:0 0 6px; }
+
+section.block{ padding:44px 52px; border-bottom:1px solid var(--line); }
+section.block:last-child{ border-bottom:none; }
+.sec-head{ display:flex; align-items:baseline; gap:14px; margin-bottom:6px; }
+.sec-head .num{ font-family:"IBM Plex Mono"; color:var(--accent); font-size:14px; font-weight:600; }
+.cy .sec-head .num{ color:var(--accent2); }
+.sec-head h2{ font-size:25px; margin:0; }
+.sec-sub{ color:var(--text-faint); font-size:13.5px; margin:0 0 26px; }
+
+h3.sub-head{ font-size:16.5px; margin:34px 0 6px; padding-top:2px; color:var(--text); display:flex; align-items:center; gap:10px;}
+h3.sub-head::after{ content:""; flex:1; height:1px; background:var(--line); }
+h4.mini-head{ font-size:13px; text-transform:uppercase; letter-spacing:.06em; color:var(--text-faint); margin:22px 0 8px; font-family:"IBM Plex Mono"; font-weight:600;}
+
+p{ margin:0 0 14px; max-width:76ch; color:var(--text-soft); }
+p b, li b{ color:var(--text); font-weight:600; }
+
+ul.check, ol.steps{ margin:0 0 16px; padding:0; list-style:none; max-width:78ch; }
+ul.check li{ position:relative; padding:3px 0 3px 24px; color:var(--text-soft); }
+ul.check li::before{ content:"▢"; position:absolute; left:0; color:var(--accent); font-size:13px; top:5px; }
+.cy ul.check li::before{ color:var(--accent2); }
+ol.steps{ counter-reset:step; }
+ol.steps li{ position:relative; padding:4px 0 4px 34px; color:var(--text-soft); counter-increment:step; }
+ol.steps li::before{ content:counter(step); position:absolute; left:0; top:3px; width:22px; height:22px; border-radius:50%; background:var(--paper-sunk); border:1px solid var(--line-strong); color:var(--accent); font-family:"IBM Plex Mono"; font-size:11.5px; font-weight:600; display:flex; align-items:center; justify-content:center; }
+.cy ol.steps li::before{ color:var(--accent2); }
+
+.tblwrap{ overflow-x:auto; margin:0 0 22px; border:1px solid var(--line); border-radius:var(--radius); }
+table{ border-collapse:collapse; width:100%; font-size:13.3px; min-width:560px; }
+thead th{ text-align:left; background:var(--paper-sunk); color:var(--text-faint); font-family:"IBM Plex Mono"; font-weight:600; font-size:11px; text-transform:uppercase; letter-spacing:.05em; padding:9px 12px; border-bottom:1px solid var(--line); white-space:nowrap; }
+tbody td{ padding:8px 12px; border-bottom:1px solid var(--line); color:var(--text-soft); vertical-align:top; }
+tbody tr:last-child td{ border-bottom:none; }
+tbody tr:hover{ background:var(--paper-raised); }
+td code, td.mono, th.mono{ font-family:"IBM Plex Mono"; color:var(--text); font-size:12.6px; }
+td:first-child{ color:var(--text); font-weight:500; white-space:nowrap; }
+
+.codeblock{ margin:0 0 20px; border-radius:var(--radius); overflow:hidden; border:1px solid var(--line); box-shadow:var(--shadow); }
+.codeblock .bar{ display:flex; align-items:center; justify-content:space-between; background:var(--paper-sunk); padding:7px 14px; border-bottom:1px solid var(--line); }
+.codeblock .bar .lbl{ font-family:"IBM Plex Mono"; font-size:11px; color:var(--text-faint); letter-spacing:.04em; text-transform:uppercase; }
+.codeblock .bar .dots{ display:flex; gap:5px; }
+.codeblock .bar .dots i{ width:7px; height:7px; border-radius:50%; background:var(--line-strong); display:block; }
+.codeblock pre{ margin:0; padding:14px 16px; overflow-x:auto; background:var(--code-bg); color:var(--code-text); font-size:12.8px; line-height:1.62; }
+.codeblock pre .c{ color:var(--code-com); font-style:italic; }
+.codeblock pre .s{ color:var(--code-str); }
+.codeblock pre .k{ color:var(--code-key); }
+
+.grid2{ display:grid; grid-template-columns:1fr 1fr; gap:20px; }
+.grid3{ display:grid; grid-template-columns:1fr 1fr 1fr; gap:20px; }
+@media (max-width:900px){ .grid2,.grid3{ grid-template-columns:1fr; } }
+
+.callout{ border:1px solid var(--line); border-left:3px solid var(--accent); background:var(--paper-raised); border-radius:var(--radius); padding:14px 18px; margin:0 0 20px; max-width:78ch; }
+.callout p{ margin:0; }
+.callout .tag{ font-family:"IBM Plex Mono"; font-size:10.5px; text-transform:uppercase; letter-spacing:.08em; color:var(--accent); font-weight:600; margin-bottom:6px; display:block;}
+.callout.warn{ border-left-color:var(--warn); }
+.callout.warn .tag{ color:var(--warn); }
+.callout.ok{ border-left-color:var(--ok); }
+.callout.ok .tag{ color:var(--ok); }
+.cy .callout{ border-left-color:var(--accent2); }
+.cy .callout .tag{ color:var(--accent2); }
+.cy .callout.warn{ border-left-color:var(--warn); }
+.cy .callout.warn .tag{ color:var(--warn); }
+
+.card-row{ display:grid; grid-template-columns:repeat(auto-fit,minmax(210px,1fr)); gap:14px; margin:0 0 22px; }
+.card{ border:1px solid var(--line); background:var(--paper-raised); border-radius:var(--radius); padding:14px 16px; }
+.card h5{ margin:0 0 6px; font-size:13.5px; color:var(--text); }
+.card p{ margin:0; font-size:12.8px; color:var(--text-faint); }
+
+kbd{ background:var(--paper-sunk); border:1px solid var(--line-strong); border-bottom-width:2px; border-radius:4px; padding:1.5px 6px; font-size:11.5px; color:var(--text); }
+
+footer.end{ padding:40px 52px; color:var(--text-faint); font-size:12px; display:flex; justify-content:space-between; gap:20px; flex-wrap:wrap;}
+footer.end a{ color:var(--text-faint); }
+@media (max-width:980px){
+  .toc{ display:none; }
+  .hero,section.block,.part-title{ padding-left:22px; padding-right:22px; }
+}
+</style>
+</head>
+<body>
+
+<div class="theme-toggle" role="group" aria-label="Theme">
+  <button data-theme-btn="system" class="active">Auto</button>
+  <button data-theme-btn="light">Light</button>
+  <button data-theme-btn="dark">Dark</button>
+</div>
+
+<div class="shell">
+  <aside class="toc">
+    <div class="brand"><span class="mark"></span><b>OFFENSIVE FIELDBOOK</b></div>
+    <p class="tagline">binaries &amp; ciphers, start to flag</p>
+
+    <div class="part-label">Part I — Reverse Engineering</div>
+    <nav>
+      <div class="grp"><a href="#s1"><span class="n">01</span>Initial Assessment</a></div>
+      <ul class="sub">
+        <li><a href="#s1-workflow">Static workflow</a></li>
+        <li><a href="#s1-formats">Format ID</a></li>
+        <li><a href="#s1-packers">Packers &amp; protectors</a></li>
+        <li><a href="#s1-triage">Hashes, strings, IAT</a></li>
+      </ul>
+      <div class="grp"><a href="#s2"><span class="n">02</span>Toolbox</a></div>
+      <ul class="sub">
+        <li><a href="#s2-decomp">Disassemblers / decompilers</a></li>
+        <li><a href="#s2-dbg">Debuggers</a></li>
+        <li><a href="#s2-pe">PE &amp; ELF tools</a></li>
+        <li><a href="#s2-unpack">Unpacking &amp; memory</a></li>
+      </ul>
+      <div class="grp"><a href="#s3"><span class="n">03</span>Keybindings</a></div>
+      <ul class="sub">
+        <li><a href="#s3-ghidra">Ghidra</a></li>
+        <li><a href="#s3-ida">IDA Pro</a></li>
+        <li><a href="#s3-x64dbg">x64dbg</a></li>
+        <li><a href="#s3-gdb">GDB / GEF</a></li>
+      </ul>
+      <div class="grp"><a href="#s4"><span class="n">04</span>Patterns</a></div>
+      <ul class="sub">
+        <li><a href="#s4-cf">Control flow in asm</a></li>
+        <li><a href="#s4-antidbg">Anti-debug bypass</a></li>
+        <li><a href="#s4-antivm">Anti-VM bypass</a></li>
+        <li><a href="#s4-stripped">Stripped &amp; obfuscated</a></li>
+      </ul>
+      <div class="grp"><a href="#s5"><span class="n">05</span>Automation</a></div>
+      <ul class="sub">
+        <li><a href="#s5-z3">Z3 solving</a></li>
+        <li><a href="#s5-pwn">pwntools</a></li>
+        <li><a href="#s5-frida">Frida</a></li>
+        <li><a href="#s5-angr">angr</a></li>
+      </ul>
+      <div class="grp"><a href="#s6"><span class="n">06</span>Patching</a></div>
+      <ul class="sub">
+        <li><a href="#s6-mech">Patch mechanics</a></li>
+        <li><a href="#s6-export">Exporting binaries</a></li>
+      </ul>
+    </nav>
+
+    <div class="part-label cy">Part II — Cryptography</div>
+    <nav>
+      <div class="grp cy"><a href="#c1"><span class="n">01</span>Identify the Cipher</a></div>
+      <ul class="sub">
+        <li><a href="#c1-encoding">Encodings vs encryption</a></li>
+        <li><a href="#c1-classical">Classical ciphers</a></li>
+        <li><a href="#c1-hashid">Hash identification</a></li>
+      </ul>
+      <div class="grp cy"><a href="#c2"><span class="n">02</span>Symmetric Crypto</a></div>
+      <ul class="sub">
+        <li><a href="#c2-modes">Block cipher modes</a></li>
+        <li><a href="#c2-ecb">ECB &amp; CBC attacks</a></li>
+        <li><a href="#c2-padding">Padding oracle</a></li>
+        <li><a href="#c2-stream">Stream cipher &amp; keystream reuse</a></li>
+      </ul>
+      <div class="grp cy"><a href="#c3"><span class="n">03</span>RSA</a></div>
+      <ul class="sub">
+        <li><a href="#c3-basics">Parameters &amp; sanity checks</a></li>
+        <li><a href="#c3-factor">Factoring weak N</a></li>
+        <li><a href="#c3-e">Low-exponent &amp; padding attacks</a></li>
+        <li><a href="#c3-multi">Multi-ciphertext attacks</a></li>
+      </ul>
+      <div class="grp cy"><a href="#c4"><span class="n">04</span>ECC &amp; Signatures</a></div>
+      <ul class="sub">
+        <li><a href="#c4-ecdsa">ECDSA nonce reuse</a></li>
+        <li><a href="#c4-curve">Invalid-curve / weak curve</a></li>
+      </ul>
+      <div class="grp cy"><a href="#c5"><span class="n">05</span>Hashing &amp; PRNGs</a></div>
+      <ul class="sub">
+        <li><a href="#c5-lenext">Length extension</a></li>
+        <li><a href="#c5-crack">Offline cracking</a></li>
+        <li><a href="#c5-prng">PRNG prediction</a></li>
+      </ul>
+      <div class="grp cy"><a href="#c6"><span class="n">06</span>Toolbox &amp; Workflow</a></div>
+      <ul class="sub">
+        <li><a href="#c6-tools">Core tools</a></li>
+        <li><a href="#c6-flow">Triage flowchart</a></li>
+      </ul>
+    </nav>
+  </aside>
+
+  <main>
+    <div class="hero">
+      <div class="eyebrow">Reference — offensive binary &amp; cipher work</div>
+      <h1>The Offensive Fieldbook</h1>
+      <p class="lede">Two disciplines, one workflow: identify what you're looking at, reach for the right tool immediately, and automate the part that's just arithmetic. Part I takes a binary from <code>file</code> to flag. Part II does the same for a ciphertext.</p>
+      <div class="stats">
+        <div><b>12</b>chapters</div>
+        <div><b>ELF·PE·RSA·AES·ECC</b>coverage</div>
+        <div><b>Z3·angr·sage·RsaCtfTool</b>solvers</div>
+        <div><b>x86-64 / ARM</b>architectures</div>
+      </div>
+      <div class="parts">
+        <a href="#s1"><span class="dot"></span>Jump to Reverse Engineering →</a>
+        <a class="cy" href="#c1"><span class="dot"></span>Jump to Cryptography →</a>
+      </div>
+    </div>
+
+    <!-- =========================================================== -->
+    <!-- PART I — REVERSE ENGINEERING                                  -->
+    <!-- =========================================================== -->
+    <div class="part-title re">
+      <div class="eyebrow">Part I</div>
+      <h1>Reverse Engineering</h1>
+      <p>Binary triage, tooling, hotkeys, the assembly patterns compilers actually emit, anti-analysis bypasses, and the automation that turns a manual afternoon into a five-second script.</p>
+    </div>
+
+    <section class="block" id="s1">
+      <div class="sec-head"><span class="num">01</span><h2>Initial Assessment Methodology</h2></div>
+      <p class="sec-sub">What to do in the first five minutes, before a disassembler is even open.</p>
+
+      <h3 class="sub-head" id="s1-workflow">Static assessment workflow</h3>
+      <p>Work top-down. Each step should take seconds and can rule out entire classes of technique — don't open Ghidra until you know what you're opening it on.</p>
+      <ol class="steps">
+        <li><b>Identify the container.</b> <code>file ./target</code> — architecture, bitness, endianness, static/dynamic linking, stripped status.</li>
+        <li><b>Hash it</b> for correlation against VirusTotal / known-sample databases and to detect if a "patched" copy changed. <code>sha256sum ./target</code>.</li>
+        <li><b>Check for packing</b> before doing anything else — a packed binary's strings and imports are meaningless until unpacked.</li>
+        <li><b>Pull strings</b> in both narrow and wide encodings; grep for flag formats, URLs, format strings, and library version banners.</li>
+        <li><b>Enumerate imports/exports</b> — the import table is a free summary of what the binary <i>does</i>.</li>
+        <li><b>Run it</b> in an isolated VM/container with <code>strace</code>/<code>ltrace</code> or Procmon — dynamic behavior is often faster than static reading.</li>
+        <li><b>Open in a decompiler</b> only once the above narrows the search space.</li>
+        <li><b>Set up dynamic analysis</b> (debugger, Frida, or emulator) matched to what step 6 revealed.</li>
+      </ol>
+
+      <div class="callout"><span class="tag">Quick wins first</span>
+      <p>Before any real reversing: <code>strings target | grep -iE 'flag|CTF\{|pico|key|secret'</code>, then <code>ltrace ./target</code>. A meaningful fraction of easy CTF binaries fall to these two commands alone.</p></div>
+
+      <h3 class="sub-head" id="s1-formats">Binary identification across formats</h3>
+      <div class="tblwrap"><table>
+        <thead><tr><th>Format</th><th class="mono">Magic bytes</th><th>Identify with</th><th>Key structures</th></tr></thead>
+        <tbody>
+          <tr><td>ELF (Linux)</td><td class="mono">7F 45 4C 46</td><td class="mono">file, readelf -h</td><td>ELF header → Program headers → Section headers; e_type EXEC/DYN/REL/CORE</td></tr>
+          <tr><td>PE (Windows)</td><td class="mono">4D 5A ("MZ")</td><td class="mono">file, dumpbin /headers</td><td>DOS header → PE signature → COFF header → Optional header → Section table</td></tr>
+          <tr><td>Mach-O (macOS/iOS)</td><td class="mono">CF FA ED FE / FE ED FA CE</td><td class="mono">file, otool -h</td><td>mach_header(_64) → load commands → segments/sections</td></tr>
+          <tr><td>Fat/Universal Mach-O</td><td class="mono">CA FE BA BE</td><td class="mono">lipo -info, file</td><td>fat_header → array of fat_arch</td></tr>
+          <tr><td>APK (Android)</td><td class="mono">50 4B 03 04 ("PK")</td><td class="mono">unzip -l, aapt dump badging</td><td>classes.dex, AndroidManifest.xml, lib/&lt;abi&gt;/*.so</td></tr>
+          <tr><td>.NET PE (CLR)</td><td class="mono">4D 5A + CLR header</td><td class="mono">dotnet-info, ildasm /all</td><td>Standard PE + CLI header → metadata tables, IL bodies</td></tr>
+          <tr><td>Java class</td><td class="mono">CA FE BA BE</td><td class="mono">javap -c, file</td><td>constant pool → fields → methods → bytecode</td></tr>
+          <tr><td>WASM</td><td class="mono">00 61 73 6D</td><td class="mono">wasm-objdump -h</td><td>Type/Import/Function/Export/Code sections</td></tr>
+        </tbody>
+      </table></div>
+
+      <div class="codeblock"><div class="bar"><span class="lbl">bash · full identification pass</span><span class="dots"><i></i><i></i><i></i></span></div>
+<pre><span class="c"># One-shot ID pass — run this on every new sample</span>
+file target
+sha256sum target
+readelf -h target 2>/dev/null || dumpbin /headers target 2>/dev/null
+readelf -d target 2>/dev/null   <span class="c"># dynamic deps, RPATH, PIE/RELRO flags</span>
+checksec --file=target          <span class="c"># RELRO, canary, NX, PIE, RPATH, Fortify</span>
+strings -n 8 target | head -50
+strings -e l target | head -20  <span class="c"># UTF-16LE strings on Windows binaries</span></pre></div>
+
+      <h4 class="mini-head">Endianness &amp; architecture cross-check</h4>
+      <div class="tblwrap"><table>
+        <thead><tr><th>e_machine value</th><th>Architecture</th><th>Typical endianness</th></tr></thead>
+        <tbody>
+          <tr><td class="mono">0x03</td><td>x86 (i386)</td><td>Little</td></tr>
+          <tr><td class="mono">0x3E</td><td>x86-64</td><td>Little</td></tr>
+          <tr><td class="mono">0x28</td><td>ARM (32-bit)</td><td>Little (usually)</td></tr>
+          <tr><td class="mono">0xB7</td><td>AArch64</td><td>Little</td></tr>
+          <tr><td class="mono">0x08</td><td>MIPS</td><td>Either — check ELFDATA2LSB/MSB</td></tr>
+          <tr><td class="mono">0xF3</td><td>RISC-V</td><td>Little</td></tr>
+          <tr><td class="mono">0x14</td><td>PowerPC</td><td>Big (classic), either (PPC64LE)</td></tr>
+        </tbody>
+      </table></div>
+
+      <h3 class="sub-head" id="s1-packers">Identifying packers and protectors</h3>
+      <p>Packing compresses/encrypts the real code and wraps it in a small stub that decompresses it at runtime. Protectors (VMProtect, Themida) go further and virtualize code into custom bytecode.</p>
+
+      <div class="tblwrap"><table>
+        <thead><tr><th>Indicator</th><th>What it means</th></tr></thead>
+        <tbody>
+          <tr><td>High entropy sections (&gt;7.0/8.0)</td><td>Compressed or encrypted data — run <code>binwalk -E</code> or DIE's entropy view</td></tr>
+          <tr><td>Tiny import table (5–15 entries)</td><td>Real imports resolved manually at runtime — classic packer stub signature</td></tr>
+          <tr><td>Single executable section, huge and RWX</td><td>Unpacking stub decompresses into this region and jumps into it</td></tr>
+          <tr><td>Entry point in a section named <code>UPX0</code>/<code>UPX1</code></td><td>UPX or UPX-derivative packer</td></tr>
+          <tr><td>Section names like <code>.vmp0</code>, <code>.themida</code></td><td>Named protector — VMProtect / Themida</td></tr>
+          <tr><td>Huge number of indirect jumps through a dispatcher loop</td><td>Code virtualization (VM-based protector)</td></tr>
+        </tbody>
+      </table></div>
+
+      <div class="codeblock"><div class="bar"><span class="lbl">bash · packer triage</span><span class="dots"><i></i><i></i><i></i></span></div>
+<pre>die target                      <span class="c"># Detect It Easy CLI — signature-based packer/compiler ID</span>
+diec -e target                  <span class="c"># entropy per section</span>
+binwalk -E target                <span class="c"># entropy graph, also finds embedded files</span>
+upx -t target                   <span class="c"># test if UPX-packed; upx -d target -o unpacked to strip</span>
+readelf -S target | awk '{print $2,$7}'   <span class="c"># flag W+E sections</span></pre></div>
+
+      <div class="card-row">
+        <div class="card"><h5>UPX</h5><p>Open-source, single-stage. <code>upx -d</code> almost always works.</p></div>
+        <div class="card"><h5>Themida / WinLicense</h5><p>Heavy anti-debug + optional virtualization. Dump at OEP with ScyllaHide + x64dbg, fix IAT with Scylla.</p></div>
+        <div class="card"><h5>VMProtect</h5><p>Converts code to custom bytecode. Trace handler dispatch dynamically instead of statically devirtualizing.</p></div>
+        <div class="card"><h5>ASPack / PECompact</h5><p>Simple compressors, unicorn-emulate the stub or single-step to OEP, then dump.</p></div>
+      </div>
+
+      <h3 class="sub-head" id="s1-triage">Hash extraction, string analysis &amp; import/export triage</h3>
+      <div class="grid2">
+        <div>
+          <h4 class="mini-head">Hashing</h4>
+          <div class="codeblock"><div class="bar"><span class="lbl">bash</span><span class="dots"><i></i><i></i><i></i></span></div>
+<pre>md5sum target; sha1sum target; sha256sum target
+ssdeep target                   <span class="c"># fuzzy hash — similarity to known samples</span>
+pehash target                   <span class="c"># import-table hash, clusters packed variants</span></pre></div>
+        </div>
+        <div>
+          <h4 class="mini-head">String triage priorities</h4>
+          <ul class="check">
+            <li>Flag-shaped strings: <code>flag{</code>, <code>CTF{</code></li>
+            <li>Format strings near suspicious calls</li>
+            <li>File paths — leak build environment</li>
+            <li>URLs / IPs — remote flag check</li>
+            <li>Crypto constants as ASCII</li>
+          </ul>
+        </div>
+      </div>
+      <h4 class="mini-head">Import table → capability map</h4>
+      <div class="tblwrap"><table>
+        <thead><tr><th>Import seen</th><th>Suggests</th></tr></thead>
+        <tbody>
+          <tr><td class="mono">ptrace, PTRACE_TRACEME</td><td>Anti-debug (Linux)</td></tr>
+          <tr><td class="mono">IsDebuggerPresent, NtQueryInformationProcess</td><td>Anti-debug (Windows)</td></tr>
+          <tr><td class="mono">CryptEncrypt, EVP_EncryptInit, AES_set_encrypt_key</td><td>Crypto routine to reverse</td></tr>
+          <tr><td class="mono">connect, WSAConnect, socket</td><td>Network validation / remote flag check</td></tr>
+          <tr><td class="mono">mmap+PROT_EXEC, VirtualAlloc+PAGE_EXECUTE</td><td>Self-modifying / JIT / unpacking stub</td></tr>
+          <tr><td class="mono">GetProcAddress in a loop</td><td>Manual import resolution — packed binary</td></tr>
+        </tbody>
+      </table></div>
+    </section>
+
+    <section class="block" id="s2">
+      <div class="sec-head"><span class="num">02</span><h2>Comprehensive Toolbox Directory</h2></div>
+      <p class="sec-sub">Grouped by role: what to reach for, and the commands that get you moving in the first minute.</p>
+
+      <h3 class="sub-head" id="s2-decomp">Disassemblers &amp; decompilers</h3>
+      <div class="tblwrap"><table>
+        <thead><tr><th>Tool</th><th>Best for</th><th>Core commands / actions</th></tr></thead>
+        <tbody>
+          <tr><td>Ghidra</td><td>Free, scriptable, best for large stripped binaries, built-in diffing</td><td class="mono">analyzeHeadless proj/ tmp -import bin -postScript script.py</td></tr>
+          <tr><td>IDA Pro / IDA Free</td><td>Gold-standard decompiler (Hex-Rays), best FLIRT signature libraries</td><td class="mono">ida64 -A -S"script.py" target</td></tr>
+          <tr><td>Binary Ninja</td><td>Clean IL stack (LLIL/MLIL/HLIL), fast headless Python API</td><td class="mono">bn.get_function_at(addr).hlil</td></tr>
+          <tr><td>Cutter (rizin/radare2 GUI)</td><td>Free, fast triage, integrated debugger</td><td class="mono">r2 -d ./binary; aaa</td></tr>
+          <tr><td>dogbolt.org</td><td>Side-by-side decompiler comparison from one upload</td><td>Upload binary, compare panes, no install</td></tr>
+        </tbody>
+      </table></div>
+
+      <h3 class="sub-head" id="s2-dbg">Debuggers</h3>
+      <div class="tblwrap"><table>
+        <thead><tr><th>Tool</th><th>Platform</th><th>Notes</th></tr></thead>
+        <tbody>
+          <tr><td>x64dbg / x32dbg</td><td>Windows</td><td>Free, TitanEngine core; ScyllaHide for anti-anti-debug</td></tr>
+          <tr><td>GDB (+ GEF/PEDA/pwndbg)</td><td>Linux, cross-arch via gdb-multiarch</td><td>GEF adds heap analysis, pattern search, context view</td></tr>
+          <tr><td>WinDbg / WinDbg Preview</td><td>Windows, kernel-mode capable</td><td>Best for driver/kernel debugging, crash-dump analysis, TTD</td></tr>
+          <tr><td>dnSpy / dnSpyEx</td><td>.NET (IL)</td><td>Edit-and-continue IL debugging, no source needed</td></tr>
+          <tr><td>lldb</td><td>macOS/iOS, LLVM-based</td><td>Required for Mach-O; scriptable via <code>script</code></td></tr>
+        </tbody>
+      </table></div>
+
+      <div class="codeblock"><div class="bar"><span class="lbl">bash · GEF setup (one-time)</span><span class="dots"><i></i><i></i><i></i></span></div>
+<pre>bash -c "$(curl -fsSL https://gef.blah.cat/sh)"   <span class="c"># installs GEF into ~/.gdbinit</span>
+gdb -q ./target</pre></div>
+
+      <h3 class="sub-head" id="s2-pe">PE &amp; ELF analysis tools</h3>
+      <div class="tblwrap"><table>
+        <thead><tr><th>Tool</th><th>Format</th><th>Use case</th></tr></thead>
+        <tbody>
+          <tr><td>PEstudio</td><td>PE</td><td>Static triage dashboard — imports, strings, blacklisted APIs, no execution</td></tr>
+          <tr><td>PE-bear</td><td>PE</td><td>Visual header/section editor for manual patch of PE headers post-unpack</td></tr>
+          <tr><td>DIE (Detect It Easy)</td><td>PE/ELF/Mach-O</td><td>Signature-based packer/compiler ID, entropy view, hex viewer</td></tr>
+          <tr><td>readelf</td><td>ELF</td><td class="mono">readelf -h/-l/-S/-d/-r/-x .rodata target</td></tr>
+          <tr><td>objdump</td><td>ELF/PE (BFD)</td><td class="mono">objdump -d -M intel target</td></tr>
+          <tr><td>nm</td><td>ELF/Mach-O</td><td class="mono">nm -D target; nm -C</td></tr>
+          <tr><td>pefile (Python)</td><td>PE</td><td>Scriptable header/import parsing, IAT hash computation</td></tr>
+        </tbody>
+      </table></div>
+
+      <h3 class="sub-head" id="s2-unpack">Unpacking &amp; memory dumping tools</h3>
+      <div class="grid2">
+        <div class="card"><h5>Process Hacker / System Informer</h5><p>Live process/handle/memory inspector for Windows — inspect and dump modules directly.</p></div>
+        <div class="card"><h5>Scylla</h5><p>IAT rebuilder — after dumping a packed process at OEP, rewrites the fixed-up IAT into a runnable PE.</p></div>
+        <div class="card"><h5>Volatility 3</h5><p>Memory-forensics framework: <code>windows.pslist</code>, <code>windows.malfind</code> for injected/unpacked code regions.</p></div>
+        <div class="card"><h5>PE-Sieve</h5><p>Scans a running process versus the on-disk PE for hooks/hollowing and dumps the diff automatically.</p></div>
+      </div>
+    </section>
+
+    <section class="block" id="s3">
+      <div class="sec-head"><span class="num">03</span><h2>Keybindings &amp; Cheat Commands</h2></div>
+      <p class="sec-sub">Muscle-memory shortcuts for the four tools you'll live in most.</p>
+
+      <h3 class="sub-head" id="s3-ghidra">Ghidra</h3>
+      <div class="tblwrap"><table>
+        <thead><tr><th>Key</th><th>Action</th></tr></thead>
+        <tbody>
+          <tr><td><kbd>G</kbd></td><td>Go to address / symbol</td></tr>
+          <tr><td><kbd>L</kbd></td><td>Rename current symbol</td></tr>
+          <tr><td><kbd>Ctrl</kbd>+<kbd>L</kbd></td><td>Retype variable</td></tr>
+          <tr><td><kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>G</kbd></td><td>Patch instruction (assemble in place)</td></tr>
+          <tr><td><kbd>Ctrl</kbd>+<kbd>E</kbd></td><td>Edit bytes (hex patch)</td></tr>
+          <tr><td><kbd>X</kbd></td><td>Show Xrefs to current symbol</td></tr>
+          <tr><td><kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>F</kbd></td><td>Search text (strings/decompiler output)</td></tr>
+          <tr><td><kbd>Ctrl</kbd>+<kbd>Alt</kbd>+<kbd>Left/Right</kbd></td><td>Navigate back/forward</td></tr>
+          <tr><td><kbd>F</kbd></td><td>Create function at cursor</td></tr>
+          <tr><td><kbd>Shift</kbd>+<kbd>P</kbd></td><td>Edit function signature</td></tr>
+          <tr><td><kbd>;</kbd></td><td>Add end-of-line comment</td></tr>
+        </tbody>
+      </table></div>
+
+      <h3 class="sub-head" id="s3-ida">IDA Pro</h3>
+      <div class="tblwrap"><table>
+        <thead><tr><th>Key</th><th>Action</th></tr></thead>
+        <tbody>
+          <tr><td><kbd>G</kbd></td><td>Jump to address</td></tr>
+          <tr><td><kbd>N</kbd></td><td>Rename symbol under cursor</td></tr>
+          <tr><td><kbd>X</kbd></td><td>List cross-references to item</td></tr>
+          <tr><td><kbd>Ctrl</kbd>+<kbd>X</kbd></td><td>List cross-references from item</td></tr>
+          <tr><td><kbd>F5</kbd></td><td>Open Hex-Rays pseudocode</td></tr>
+          <tr><td><kbd>Space</kbd></td><td>Toggle graph / text view</td></tr>
+          <tr><td><kbd>Alt</kbd>+<kbd>T</kbd></td><td>Text search</td></tr>
+          <tr><td><kbd>Alt</kbd>+<kbd>B</kbd></td><td>Binary/byte-pattern search</td></tr>
+          <tr><td><kbd>Ctrl</kbd>+<kbd>Alt</kbd>+<kbd>B</kbd></td><td>Toggle breakpoint</td></tr>
+          <tr><td><kbd>P</kbd></td><td>Create/edit function at cursor</td></tr>
+          <tr><td><kbd>Shift</kbd>+<kbd>F12</kbd></td><td>Open Strings window</td></tr>
+        </tbody>
+      </table></div>
+
+      <h3 class="sub-head" id="s3-x64dbg">x64dbg</h3>
+      <div class="tblwrap"><table>
+        <thead><tr><th>Key</th><th>Action</th></tr></thead>
+        <tbody>
+          <tr><td><kbd>F2</kbd></td><td>Toggle breakpoint</td></tr>
+          <tr><td><kbd>F7</kbd></td><td>Step into</td></tr>
+          <tr><td><kbd>F8</kbd></td><td>Step over</td></tr>
+          <tr><td><kbd>F9</kbd></td><td>Run / continue</td></tr>
+          <tr><td><kbd>Ctrl</kbd>+<kbd>F9</kbd></td><td>Execute till return</td></tr>
+          <tr><td><kbd>Ctrl</kbd>+<kbd>G</kbd></td><td>Go to expression/address</td></tr>
+          <tr><td><kbd>Ctrl</kbd>+<kbd>B</kbd></td><td>Binary search in memory dump</td></tr>
+          <tr><td><kbd>Space</kbd></td><td>Assemble instruction at cursor</td></tr>
+          <tr><td><kbd>Ctrl</kbd>+<kbd>E</kbd></td><td>Edit bytes in hex</td></tr>
+          <tr><td><kbd>Alt</kbd>+<kbd>F1</kbd></td><td>Restart debuggee</td></tr>
+        </tbody>
+      </table></div>
+
+      <h3 class="sub-head" id="s3-gdb">GDB (+ GEF)</h3>
+      <div class="codeblock"><div class="bar"><span class="lbl">gdb / gef console</span><span class="dots"><i></i><i></i><i></i></span></div>
+<pre>b *0x401234              <span class="c"># breakpoint at raw address</span>
+b *main+0xca               <span class="c"># PIE-relative breakpoint</span>
+r &lt; input.txt              <span class="c"># run with stdin redirected</span>
+ni / si                    <span class="c"># step over / step into</span>
+finish                     <span class="c"># run until current function returns</span>
+x/20i $pc                  <span class="c"># disassemble 20 instrs at PC</span>
+x/s $rsi                   <span class="c"># dump string at RSI</span>
+gef&gt; context                <span class="c"># redraw full context</span>
+gef&gt; search-pattern "flag{" <span class="c"># scan mapped memory for a string</span>
+gef&gt; vmmap                  <span class="c"># memory map with permissions</span>
+gef&gt; patch byte $pc 0x90    <span class="c"># NOP a single byte</span></pre></div>
+    </section>
+
+    <section class="block" id="s4">
+      <div class="sec-head"><span class="num">04</span><h2>Common Scenarios, Anti-Analysis &amp; Reversing Patterns</h2></div>
+      <p class="sec-sub">Recognizing what the compiler emitted, and defeating what the author added on top.</p>
+
+      <h3 class="sub-head" id="s4-cf">Control flow: source → x86-64 / ARM</h3>
+      <div class="grid2">
+        <div class="codeblock"><div class="bar"><span class="lbl">x86-64 · if/else</span><span class="dots"><i></i><i></i><i></i></span></div>
+<pre>cmp   edi, 10
+jle   .else_branch     <span class="c"># inverted condition</span>
+    ... <span class="c">; if-body</span>
+    jmp .end
+.else_branch:
+    ... <span class="c">; else-body</span>
+.end:</pre></div>
+        <div class="codeblock"><div class="bar"><span class="lbl">ARM64 · if/else</span><span class="dots"><i></i><i></i><i></i></span></div>
+<pre>cmp   w0, #10
+b.le  .else_branch
+    ... <span class="c">// if-body</span>
+    b   .end
+.else_branch:
+    ... <span class="c">// else-body</span>
+.end:</pre></div>
+      </div>
+      <p><b>Rule of thumb:</b> the compiler almost always inverts the source condition and jumps past the "true" branch.</p>
+
+      <h4 class="mini-head">Switch statements</h4>
+      <div class="tblwrap"><table>
+        <thead><tr><th>Pattern</th><th>Compiled form</th><th>Recognize by</th></tr></thead>
+        <tbody>
+          <tr><td>Dense, sequential cases</td><td>Jump table: <code>jmp [rip+table+rax*8]</code></td><td>Array of code addresses in .rodata, indexed directly</td></tr>
+          <tr><td>Sparse cases</td><td>Chain of <code>cmp</code>/<code>je</code></td><td>Repeated comparisons against the same register</td></tr>
+          <tr><td>Mixed density</td><td>Comparison tree + jump table for dense sub-range</td><td>Range-checks around a jump table</td></tr>
+        </tbody>
+      </table></div>
+
+      <h4 class="mini-head">Function calls &amp; calling conventions</h4>
+      <div class="tblwrap"><table>
+        <thead><tr><th>Convention</th><th>Integer/pointer args</th><th>Return</th><th>Cleanup</th></tr></thead>
+        <tbody>
+          <tr><td>System V AMD64</td><td class="mono">rdi, rsi, rdx, rcx, r8, r9</td><td class="mono">rax</td><td>Caller cleans</td></tr>
+          <tr><td>Microsoft x64</td><td class="mono">rcx, rdx, r8, r9</td><td class="mono">rax</td><td>Caller cleans, 32B shadow space</td></tr>
+          <tr><td>AArch64 AAPCS</td><td class="mono">x0–x7</td><td class="mono">x0</td><td>N/A — register-based</td></tr>
+          <tr><td>x86 cdecl</td><td>Stack, right-to-left</td><td class="mono">eax</td><td>Caller cleans</td></tr>
+          <tr><td>x86 stdcall</td><td>Stack, right-to-left</td><td class="mono">eax</td><td>Callee cleans</td></tr>
+        </tbody>
+      </table></div>
+
+      <h3 class="sub-head" id="s4-antidbg">Anti-debugging bypasses</h3>
+      <div class="tblwrap"><table>
+        <thead><tr><th>Technique</th><th>Platform</th><th>Bypass</th></tr></thead>
+        <tbody>
+          <tr><td class="mono">IsDebuggerPresent()</td><td>Windows</td><td>Patch return to 0, or flip PEB.BeingDebugged (+0x2)</td></tr>
+          <tr><td>PEB.NtGlobalFlag</td><td>Windows</td><td>Zero the flag at PEB+0x68</td></tr>
+          <tr><td class="mono">NtQueryInformationProcess</td><td>Windows</td><td>Hook to force ProcessDebugPort/Flags/ObjectHandle → 0</td></tr>
+          <tr><td>TLS callbacks</td><td>Windows</td><td>Check PE TLS Directory; breakpoint fires before main</td></tr>
+          <tr><td class="mono">rdtsc</code> timing checks</td><td>Both</td><td>Patch the delta comparison, or hook to return a fixed delta</td></tr>
+          <tr><td>Hardware breakpoint scan (DR0-DR3)</td><td>Windows</td><td>Prefer software breakpoints, or zero DR registers first</td></tr>
+          <tr><td class="mono">ptrace(PTRACE_TRACEME)</td><td>Linux</td><td>LD_PRELOAD shim that makes ptrace() always return 0</td></tr>
+          <tr><td>/proc/self/status TracerPid</td><td>Linux</td><td>Hook open/read on that path to rewrite TracerPid to 0</td></tr>
+          <tr><td>Signal-based (SIGTRAP handler)</td><td>Linux</td><td><code>handle SIGTRAP nostop noprint pass</code> in GDB</td></tr>
+        </tbody>
+      </table></div>
+
+      <div class="codeblock"><div class="bar"><span class="lbl">c · ptrace LD_PRELOAD shim (Linux)</span><span class="dots"><i></i><i></i><i></i></span></div>
+<pre><span class="c">// gcc -shared -fPIC -o antiptrace.so antiptrace.c -ldl</span>
+long ptrace(int request, ...) { <span class="k">return</span> 0; }
+<span class="c">// LD_PRELOAD=./antiptrace.so ./target</span></pre></div>
+
+      <h3 class="sub-head" id="s4-antivm">Anti-VM bypasses</h3>
+      <div class="tblwrap"><table>
+        <thead><tr><th>Check</th><th>Inspects</th><th>Bypass</th></tr></thead>
+        <tbody>
+          <tr><td>Registry artifacts</td><td>SCSI Identifier strings for VMware/VBOX/QEMU</td><td>Rename keys, or hook RegQueryValueEx</td></tr>
+          <tr><td>MAC address OUI</td><td>00:05:69 VMware, 08:00:27 VirtualBox</td><td>Set a custom MAC on the VM's NIC</td></tr>
+          <tr><td>CPUID hypervisor bit</td><td>CPUID.1:ECX[31]</td><td>Hide via hypervisor config or hook the instruction</td></tr>
+          <tr><td>Hypervisor vendor string</td><td>CPUID.40000000h leaf</td><td>Same — hypervisor CPUID hiding</td></tr>
+          <tr><td>Driver/device enumeration</td><td>VBoxMouse, VBoxGuest device files</td><td>Rename devices / hide guest additions</td></tr>
+          <tr><td>Timing anomalies</td><td>VM-exit overhead around privileged instructions</td><td>Real hardware, or patch the timing check</td></tr>
+        </tbody>
+      </table></div>
+
+      <h3 class="sub-head" id="s4-stripped">Stripped binaries, obfuscated control flow &amp; custom crypto</h3>
+      <div class="card-row">
+        <div class="card"><h5>Stripped symbols</h5><p>Diff against a known library version (BinDiff/Diaphora) to recover names.</p></div>
+        <div class="card"><h5>Opaque predicates</h5><p>Conditions that always evaluate the same way. Use angr to prove tautologies, then collapse.</p></div>
+        <div class="card"><h5>Control-flow flattening</h5><p>All blocks dispatched from one big switch on a state variable — trace writes to rebuild the real edges.</p></div>
+        <div class="card"><h5>Custom encryption</h5><p>Instrument instead of guessing — dump input/output pairs, brute-force small parameter spaces first.</p></div>
+      </div>
+    </section>
+
+    <section class="block" id="s5">
+      <div class="sec-head"><span class="num">05</span><h2>Automation, Symbolic Execution &amp; Auto-Flag Scripts</h2></div>
+      <p class="sec-sub">Let the machine do the case analysis. Four tools cover 90% of automatable CTF reversing.</p>
+
+      <h3 class="sub-head" id="s5-z3">Z3 for mathematical / constraint checks</h3>
+      <div class="codeblock"><div class="bar"><span class="lbl">python · z3 flag recovery</span><span class="dots"><i></i><i></i><i></i></span></div>
+<pre><span class="k">from</span> z3 <span class="k">import</span> *
+
+FLAG_LEN = 20
+s = Solver()
+flag = [BitVec(f<span class="s">'c{i}'</span>, 8) <span class="k">for</span> i <span class="k">in</span> range(FLAG_LEN)]
+<span class="k">for</span> c <span class="k">in</span> flag:
+    s.add(c &gt;= 0x20, c &lt;= 0x7e)
+s.add(flag[0] == ord(<span class="s">'f'</span>), flag[1] == ord(<span class="s">'l'</span>), flag[2] == ord(<span class="s">'a'</span>), flag[3] == ord(<span class="s">'g'</span>))
+
+acc = BitVecVal(0, 32)
+<span class="k">for</span> i, c <span class="k">in</span> enumerate(flag):
+    acc = (acc ^ ZeroExt(24, c)) * 0x1000193
+s.add(acc == 0xDEADBEEF)
+
+<span class="k">if</span> s.check() == sat:
+    m = s.model()
+    print(bytes([m[c].as_long() <span class="k">for</span> c <span class="k">in</span> flag]))</pre></div>
+
+      <h3 class="sub-head" id="s5-pwn">pwntools for RE automation</h3>
+      <div class="codeblock"><div class="bar"><span class="lbl">python · pwntools driver</span><span class="dots"><i></i><i></i><i></i></span></div>
+<pre><span class="k">from</span> pwn <span class="k">import</span> *
+context.arch = <span class="s">'amd64'</span>
+elf = ELF(<span class="s">'./target'</span>)
+
+known = <span class="s">b''</span>
+<span class="k">for</span> pos <span class="k">in</span> range(20):
+    <span class="k">for</span> guess <span class="k">in</span> range(0x20, 0x7f):
+        p = process(<span class="s">'./target'</span>)
+        p.sendline(known + bytes([guess]))
+        out = p.recvall(timeout=0.5); p.close()
+        <span class="k">if</span> <span class="s">b'Correct so far'</span> <span class="k">in</span> out:
+            known += bytes([guess]); log.info(known); <span class="k">break</span></pre></div>
+
+      <h3 class="sub-head" id="s5-frida">Frida dynamic instrumentation</h3>
+      <div class="codeblock"><div class="bar"><span class="lbl">javascript · frida hook</span><span class="dots"><i></i><i></i><i></i></span></div>
+<pre><span class="c">// frida -f ./target -l hook.js --no-pause</span>
+Interceptor.attach(Module.getExportByName(<span class="k">null</span>, <span class="s">'strcmp'</span>), {
+  onEnter(args) { console.log(args[0].readCString(), args[1].readCString()); },
+  onLeave(retval) { retval.replace(0); }
+});
+Interceptor.attach(Module.getExportByName(<span class="k">null</span>, <span class="s">'ptrace'</span>), {
+  onLeave(retval) { retval.replace(0); }
+});</pre></div>
+
+      <h3 class="sub-head" id="s5-angr">angr symbolic execution</h3>
+      <div class="codeblock"><div class="bar"><span class="lbl">python · angr</span><span class="dots"><i></i><i></i><i></i></span></div>
+<pre><span class="k">import</span> angr, claripy
+proj = angr.Project(<span class="s">'./target'</span>, auto_load_libs=<span class="k">False</span>)
+flag_chars = [claripy.BVS(f<span class="s">'flag_{i}'</span>, 8) <span class="k">for</span> i <span class="k">in</span> range(20)]
+flag = claripy.Concat(*flag_chars + [claripy.BVV(<span class="k">b</span><span class="s">'\n'</span>)])
+state = proj.factory.full_init_state(args=[<span class="s">'./target'</span>], stdin=flag)
+<span class="k">for</span> c <span class="k">in</span> flag_chars: state.solver.add(c &gt;= 0x20, c &lt;= 0x7e)
+simgr = proj.factory.simulation_manager(state)
+simgr.explore(find=0x4012ab, avoid=0x4012f0)
+<span class="k">if</span> simgr.found: print(simgr.found[0].posix.dumps(0))</pre></div>
+
+      <div class="tblwrap"><table>
+        <thead><tr><th>Tool</th><th>Pick when…</th></tr></thead>
+        <tbody>
+          <tr><td>Z3 (direct)</td><td>You've already extracted the exact math/logic and just need to invert it</td></tr>
+          <tr><td>angr</td><td>You want the binary itself explored, not hand-derived</td></tr>
+          <tr><td>Frida</td><td>The target must run for real and you need to observe/alter live state</td></tr>
+          <tr><td>pwntools</td><td>Gluing everything together — process control, I/O, brute-force orchestration</td></tr>
+        </tbody>
+      </table></div>
+    </section>
+
+    <section class="block" id="s6">
+      <div class="sec-head"><span class="num">06</span><h2>Patching &amp; Binary Modification</h2></div>
+      <p class="sec-sub">Turning "I understand the check" into "the binary now agrees with me."</p>
+
+      <h3 class="sub-head" id="s6-mech">Instruction modification mechanics</h3>
+      <div class="tblwrap"><table>
+        <thead><tr><th>Goal</th><th>x86/x64 bytes</th><th>Notes</th></tr></thead>
+        <tbody>
+          <tr><td>NOP out one byte</td><td class="mono">90</td><td>Multi-byte instructions need every byte NOPed</td></tr>
+          <tr><td>Unconditional jump</td><td class="mono">EB xx / E9 xxxxxxxx</td><td>Recompute relative displacement if relocated</td></tr>
+          <tr><td>Flip JNZ → JZ</td><td class="mono">75 → 74</td><td>Near-form (0F 85 ↔ 0F 84) needs both bytes swapped</td></tr>
+          <tr><td>Force branch always taken</td><td class="mono">74 xx → EB xx</td><td>Same displacement byte, swap opcode</td></tr>
+          <tr><td>Force comparison equal</td><td>e.g. <code>cmp eax,5</code> → <code>cmp eax,eax</code></td><td>Doesn't touch branch logic — subtler to integrity checks</td></tr>
+        </tbody>
+      </table></div>
+
+      <div class="tblwrap"><table>
+        <thead><tr><th>Goal</th><th>ARM(64) notes</th></tr></thead>
+        <tbody>
+          <tr><td>NOP</td><td class="mono">1F 20 03 D5</code> — fixed 4-byte width instructions</td></tr>
+          <tr><td>Flip B.EQ → B.NE</td><td>Flip bit 0 of the condition field</td></tr>
+          <tr><td>Force branch</td><td>Replace conditional B.cond with unconditional B</td></tr>
+        </tbody>
+      </table></div>
+
+      <div class="callout warn"><span class="tag">Watch for integrity checks</span>
+      <p>Self-hashing binaries (CRC over .text) detect naive patches. Patch the hash constant, patch after the hash check, or perform the bypass purely in the debugger.</p></div>
+
+      <h3 class="sub-head" id="s6-export">Exporting patched binaries</h3>
+      <div class="grid3">
+        <div class="card"><h5>Ghidra</h5><p><code>File → Export Program → Original File</code> after byte-level edits.</p></div>
+        <div class="card"><h5>IDA Pro</h5><p><code>Edit → Patch Program → Apply patches to input file</code>.</p></div>
+        <div class="card"><h5>x64dbg</h5><p><code>Patches</code> panel → <code>Patch File</code>.</p></div>
+      </div>
+    </section>
+
+    <!-- =========================================================== -->
+    <!-- PART II — CRYPTOGRAPHY                                       -->
+    <!-- =========================================================== -->
+    <div class="part-title cy">
+      <div class="eyebrow">Part II</div>
+      <h1>Cryptography</h1>
+      <p>Applied attack cryptography for CTF and code-audit work: identify what you're staring at, know the standard attack for each primitive, and reach for a working solver instead of deriving one from scratch.</p>
+    </div>
+
+    <section class="block cy" id="c1">
+      <div class="sec-head"><span class="num">01</span><h2>Identify the Cipher</h2></div>
+      <p class="sec-sub">The single highest-leverage skill in crypto challenges: correctly naming what you have before touching an attack.</p>
+
+      <h3 class="sub-head" id="c1-encoding">Encodings vs encryption</h3>
+      <p>Encodings are reversible with zero secret knowledge — check these before assuming anything is "encrypted."</p>
+      <div class="tblwrap"><table>
+        <thead><tr><th>Alphabet / shape</th><th>Likely encoding</th><th>Decode with</th></tr></thead>
+        <tbody>
+          <tr><td>Only <code>0-9a-fA-F</code>, even length</td><td>Hex</td><td class="mono">bytes.fromhex(s)</td></tr>
+          <tr><td><code>A-Za-z0-9+/</code>, padded with <code>=</code></td><td>Base64</td><td class="mono">base64.b64decode(s)</td></tr>
+          <tr><td><code>A-Z2-7</code>, padded with <code>=</code></td><td>Base32</td><td class="mono">base64.b32decode(s)</td></tr>
+          <tr><td>Bitcoin-style alnum, no <code>0OIl</code></td><td>Base58</td><td class="mono">base58.b58decode(s)</td></tr>
+          <tr><td>Dense ASCII 85-char set, often <code>&lt;~ ~&gt;</code> wrapped</td><td>ASCII85 / Base85</td><td class="mono">base64.a85decode(s)</td></tr>
+          <tr><td>Only <code>.</code>, <code>-</code>, spaces/slashes</td><td>Morse code</td><td>Table lookup, <code>/</code> = word break</td></tr>
+          <tr><td>All-letter, same length as source, letter frequency matches English</td><td>ROT13 / Caesar</td><td>Brute-force all 26 shifts</td></tr>
+          <tr><td>Only <code>0</code>/<code>1</code>, length divisible by 8</td><td>Binary</td><td class="mono">int(s,2).to_bytes(len(s)//8,'big')</td></tr>
+        </tbody>
+      </table></div>
+      <div class="callout ok"><span class="tag">Tool shortcut</span><p>CyberChef's "Magic" wand recipe auto-detects nested encodings faster than doing it by hand — paste the ciphertext, let it chain-guess.</p></div>
+
+      <h3 class="sub-head" id="c1-classical">Classical ciphers</h3>
+      <div class="tblwrap"><table>
+        <thead><tr><th>Cipher</th><th>Tell</th><th>Break with</th></tr></thead>
+        <tbody>
+          <tr><td>Caesar / ROT-N</td><td>Single fixed shift of the alphabet</td><td>Brute-force 26 shifts, score by English frequency</td></tr>
+          <tr><td>Vigenère</td><td>Repeating-key polyalphabetic, index-of-coincidence dips at key-length multiples</td><td>Kasiski examination / IC to find key length, then per-column frequency analysis</td></tr>
+          <tr><td>Substitution (monoalphabetic)</td><td>1:1 letter mapping, frequencies preserved but shuffled</td><td>quipqiup.com or hill-climbing with a bigram/trigram frequency table</td></tr>
+          <tr><td>Transposition (columnar/rail-fence)</td><td>Same letter multiset as plaintext, wrong order</td><td>Anagram/brute-force column permutations; rail-fence has few key values</td></tr>
+          <tr><td>XOR with repeating key</td><td>High byte diversity, repeats at key-length intervals</td><td>Guess key length via Hamming distance, then single-byte XOR each column</td></tr>
+          <tr><td>Playfair</td><td>Ciphertext length always even, no double letters</td><td>Digraph frequency analysis / known-plaintext with a 5×5 grid</td></tr>
+          <tr><td>Affine (ax+b mod 26)</td><td>Behaves like Caesar but nonlinear letter shift</td><td>Brute-force valid <code>a</code> (coprime to 26) × all <code>b</code> — only 312 keys</td></tr>
+        </tbody>
+      </table></div>
+
+      <div class="codeblock"><div class="bar"><span class="lbl">python · repeating-key XOR key-length recovery</span><span class="dots"><i></i><i></i><i></i></span></div>
+<pre><span class="k">from</span> itertools <span class="k">import</span> combinations
+
+<span class="k">def</span> hamming(a, b):
+    <span class="k">return</span> <span class="k">sum</span>(bin(x ^ y).count(<span class="s">'1'</span>) <span class="k">for</span> x, y <span class="k">in</span> <span class="k">zip</span>(a, b))
+
+ct = open(<span class="s">'cipher.bin'</span>, <span class="s">'rb'</span>).read()
+scores = []
+<span class="k">for</span> klen <span class="k">in</span> range(2, 41):
+    chunks = [ct[i:i+klen] <span class="k">for</span> i <span class="k">in</span> range(0, klen*4, klen)]
+    dist = sum(hamming(a, b) <span class="k">for</span> a, b <span class="k">in</span> combinations(chunks, 2)) / klen
+    scores.append((dist, klen))
+best_klen = sorted(scores)[0][1]
+
+<span class="c"># then: split ct into `best_klen` interleaved columns, single-byte XOR-crack each</span></pre></div>
+
+      <h3 class="sub-head" id="c1-hashid">Hash identification by length</h3>
+      <div class="tblwrap"><table>
+        <thead><tr><th>Hex length</th><th>Bits</th><th>Likely algorithm</th></tr></thead>
+        <tbody>
+          <tr><td>32</td><td>128</td><td>MD5, MD4, NTLM</td></tr>
+          <tr><td>40</td><td>160</td><td>SHA-1, RIPEMD-160</td></tr>
+          <tr><td>56</td><td>224</td><td>SHA-224, SHA3-224</td></tr>
+          <tr><td>64</td><td>256</td><td>SHA-256, SHA3-256</td></tr>
+          <tr><td>96</td><td>384</td><td>SHA-384</td></tr>
+          <tr><td>128</td><td>512</td><td>SHA-512, Whirlpool</td></tr>
+          <tr><td>varies, <code>$2b$</code>/<code>$2y$</code> prefix</td><td>—</td><td>bcrypt</td></tr>
+          <tr><td><code>$argon2</code> prefix</td><td>—</td><td>Argon2</td></tr>
+        </tbody>
+      </table></div>
+      <div class="codeblock"><div class="bar"><span class="lbl">bash</span><span class="dots"><i></i><i></i><i></i></span></div>
+<pre>hashid '5f4dcc3b5aa765d61d8327deb882cf99'   <span class="c"># auto-identify from format</span>
+hash-identifier                              <span class="c"># interactive alternative</span></pre></div>
+    </section>
+
+    <section class="block cy" id="c2">
+      <div class="sec-head"><span class="num">02</span><h2>Symmetric Crypto</h2></div>
+      <p class="sec-sub">Block and stream ciphers fail almost exclusively through misuse, not broken math.</p>
+
+      <h3 class="sub-head" id="c2-modes">Block cipher modes at a glance</h3>
+      <div class="tblwrap"><table>
+        <thead><tr><th>Mode</th><th>Needs</th><th>Common failure</th></tr></thead>
+        <tbody>
+          <tr><td>ECB</td><td>Nothing extra</td><td>Identical plaintext blocks → identical ciphertext blocks (pattern leakage)</td></tr>
+          <tr><td>CBC</td><td>Random IV</td><td>Bit-flipping (attacker-controlled plaintext via prior block edits), padding oracle, IV reuse</td></tr>
+          <tr><td>CTR</td><td>Unique nonce per message</td><td>Nonce reuse → XOR the two ciphertexts to get XOR of plaintexts (crib-drag from there)</td></tr>
+          <tr><td>OFB</td><td>Unique IV</td><td>Same as CTR — keystream reuse on IV reuse</td></tr>
+          <tr><td>GCM</td><td>Unique nonce, integrity tag</td><td>Nonce reuse leaks the authentication key (forgery), not just plaintext</td></tr>
+        </tbody>
+      </table></div>
+
+      <h3 class="sub-head" id="c2-ecb">ECB detection &amp; CBC bit-flipping</h3>
+      <div class="codeblock"><div class="bar"><span class="lbl">python · ECB detection</span><span class="dots"><i></i><i></i><i></i></span></div>
+<pre><span class="k">def</span> looks_like_ecb(ct: bytes, block=16) -&gt; bool:
+    blocks = [ct[i:i+block] <span class="k">for</span> i <span class="k">in</span> range(0, len(ct), block)]
+    <span class="k">return</span> len(blocks) != len(set(blocks))   <span class="c"># any repeated block = ECB tell</span></pre></div>
+      <div class="codeblock"><div class="bar"><span class="lbl">python · CBC bit-flipping</span><span class="dots"><i></i><i></i><i></i></span></div>
+<pre><span class="c"># Flipping a byte in ciphertext block N flips the SAME byte position</span>
+<span class="c"># in the decrypted plaintext of block N+1 (and garbles block N itself).</span>
+<span class="k">def</span> flip_byte(ct: bytearray, block_idx: int, byte_idx: int, xor_delta: int, block=16):
+    pos = block_idx * block + byte_idx
+    ct[pos] ^= xor_delta
+    <span class="k">return</span> ct
+<span class="c"># xor_delta = ord(current_plaintext_char) ^ ord(target_char)</span></pre></div>
+
+      <h3 class="sub-head" id="c2-padding">Padding oracle attack (PKCS#7 / CBC)</h3>
+      <p>If the server distinguishes "bad padding" from "bad MAC/data" in its error response or timing, the entire plaintext can be recovered without the key — one byte at a time, per block, using only decryption-side feedback.</p>
+      <ol class="steps">
+        <li>Take the target ciphertext block <code>C1</code> and the preceding block (or IV) <code>C0</code>.</li>
+        <li>Replace <code>C0</code> with an attacker-controlled block, brute-forcing its last byte until the oracle reports valid padding (<code>\x01</code>).</li>
+        <li>That reveals <code>I1[15] = guess ^ 0x01</code> where <code>I1</code> is the block cipher's raw decryption output.</li>
+        <li>XOR with the real <code>C0[15]</code> to recover <code>P1[15]</code>, the actual plaintext byte.</li>
+        <li>Repeat for <code>\x02\x02</code>, <code>\x03\x03\x03</code> … working backward through the block, then slide to the next block.</li>
+      </ol>
+      <div class="callout"><span class="tag">Don't hand-roll it</span><p>Use <b>PadBuster</b> or Python's <b>paddingoracle</b> library against a real oracle — the byte-by-byte loop above is easy to get subtly wrong (especially the "intermediate byte re-fix" step after the first byte is found per block).</p></div>
+
+      <h3 class="sub-head" id="c2-stream">Stream cipher &amp; keystream reuse</h3>
+      <div class="codeblock"><div class="bar"><span class="lbl">python · two-time pad (XOR key/nonce reuse)</span><span class="dots"><i></i><i></i><i></i></span></div>
+<pre><span class="c"># c1 = p1 ^ k, c2 = p2 ^ k  =>  c1 ^ c2 = p1 ^ p2 (key cancels out)</span>
+xored = bytes(a ^ b <span class="k">for</span> a, b <span class="k">in</span> <span class="k">zip</span>(c1, c2))
+<span class="c"># crib-drag: XOR `xored` with guessed common words (" the ", " and ")</span>
+<span class="c"># wherever the result is mostly printable, you've likely found overlapping plaintext</span></pre></div>
+    </section>
+
+    <section class="block cy" id="c3">
+      <div class="sec-head"><span class="num">03</span><h2>RSA</h2></div>
+      <p class="sec-sub">The single most attacked primitive in CTF crypto — almost every break comes from a parameter choice, not the math itself.</p>
+
+      <h3 class="sub-head" id="c3-basics">Parameters &amp; sanity checks</h3>
+      <ul class="check">
+        <li>Is <code>e</code> small (3, 5, 17, 65537)? → check for low-exponent attacks first</li>
+        <li>Is <code>N</code> small enough to factor directly? <code>factordb.com</code> before writing any code</li>
+        <li>Are multiple public keys given? → check for shared factors via pairwise GCD, or a common modulus</li>
+        <li>Is <code>p</code> or <code>q</code> close to <code>sqrt(N)</code>? → Fermat factorization</li>
+        <li>Is <code>d</code> unusually small relative to <code>N</code>? → Wiener's attack</li>
+      </ul>
+
+      <h3 class="sub-head" id="c3-factor">Factoring a weak N</h3>
+      <div class="tblwrar tblwrap"><table>
+        <thead><tr><th>Weakness</th><th>Attack</th><th>Tool</th></tr></thead>
+        <tbody>
+          <tr><td><code>p</code>, <code>q</code> close together</td><td>Fermat factorization</td><td>RsaCtfTool <code>--attack fermat</code>, or manual sqrt-loop</td></tr>
+          <tr><td><code>N</code> shares a factor with another modulus</td><td>Batch GCD across all given N values</td><td><code>math.gcd(N1, N2)</code> pairwise</td></tr>
+          <tr><td><code>N</code> &lt; ~90 bits</td><td>General-purpose factorization</td><td>factordb.com, <code>yafu</code>, <code>msieve</code></td></tr>
+          <tr><td><code>p</code>/<code>q</code> generated from a weak PRNG</td><td>Reconstruct PRNG state, regenerate primes</td><td>Custom script matched to the PRNG</td></tr>
+          <tr><td>Everything else / unknown</td><td>Throw the whole kitchen sink at it</td><td><code>RsaCtfTool -n N -e e --uncipher C --attack all</code></td></tr>
+        </tbody>
+      </table></div>
+
+      <div class="codeblock"><div class="bar"><span class="lbl">python · Fermat factorization</span><span class="dots"><i></i><i></i><i></i></span></div>
+<pre><span class="k">import</span> gmpy2
+
+<span class="k">def</span> fermat_factor(n):
+    a = gmpy2.isqrt(n) + 1
+    b2 = a*a - n
+    <span class="k">while</span> <span class="k">not</span> gmpy2.is_square(b2):
+        a += 1
+        b2 = a*a - n
+    b = gmpy2.isqrt(b2)
+    <span class="k">return</span> int(a - b), int(a + b)   <span class="c"># p, q</span></pre></div>
+
+      <div class="codeblock"><div class="bar"><span class="lbl">python · Wiener's attack for small private exponent d</span><span class="dots"><i></i><i></i><i></i></span></div>
+<pre><span class="k">from</span> Crypto.Util.number <span class="k">import</span> long_to_bytes
+<span class="k">from</span> owiener <span class="k">import</span> attack   <span class="c"># pip install owiener</span>
+
+d = attack(e, n)     <span class="c"># returns private exponent if it's below ~ N**0.25</span>
+<span class="k">if</span> d:
+    m = pow(c, d, n)
+    print(long_to_bytes(m))</pre></div>
+
+      <h3 class="sub-head" id="c3-e">Low-exponent &amp; padding attacks</h3>
+      <div class="tblwrap"><table>
+        <thead><tr><th>Attack</th><th>Precondition</th><th>Method</th></tr></thead>
+        <tbody>
+          <tr><td>Cube-root attack</td><td><code>e=3</code>, no padding, <code>m^3 &lt; N</code></td><td><code>m = integer_cube_root(c)</code> directly — no key needed</td></tr>
+          <tr><td>Håstad's broadcast</td><td>Same message sent to <code>e</code> or more recipients with different <code>N</code>, small <code>e</code></td><td>CRT-combine the ciphertexts, then take the integer <code>e</code>-th root</td></tr>
+          <tr><td>Common modulus</td><td>Same <code>N</code>, two different <code>e</code> values, same message</td><td>Extended Euclid on <code>e1,e2</code>, combine <code>c1,c2</code> via modular exponentiation</td></tr>
+          <tr><td>Bleichenbacher PKCS#1 v1.5 oracle</td><td>Server leaks "padding valid/invalid" on decryption</td><td>Adaptive chosen-ciphertext search narrowing the plaintext interval</td></tr>
+          <tr><td>Coppersmith's short-pad attack</td><td>Partial plaintext known, small <code>e</code></td><td>Lattice reduction (LLL) via SageMath's <code>small_roots()</code></td></tr>
+        </tbody>
+      </table></div>
+
+      <div class="codeblock"><div class="bar"><span class="lbl">python · Håstad broadcast (e=3, three ciphertexts)</span><span class="dots"><i></i><i></i><i></i></span></div>
+<pre><span class="k">from</span> sympy.ntheory.modular <span class="k">import</span> crt
+<span class="k">from</span> gmpy2 <span class="k">import</span> iroot
+
+ns = [n1, n2, n3]
+cs = [c1, c2, c3]
+combined, _ = crt(ns, cs)
+m, exact = iroot(combined, 3)
+<span class="k">assert</span> exact
+print(int(m).to_bytes((int(m).bit_length()+7)//8, <span class="s">'big'</span>))</pre></div>
+
+      <h3 class="sub-head" id="c3-multi">Multi-ciphertext / multi-key attacks</h3>
+      <div class="codeblock"><div class="bar"><span class="lbl">python · batch-GCD across many public moduli</span><span class="dots"><i></i><i></i><i></i></span></div>
+<pre><span class="k">import</span> math
+<span class="c"># given a list of (N_i) from many "independent" RSA keys sharing a bad prime source</span>
+<span class="k">for</span> i <span class="k">in</span> range(len(ns)):
+    <span class="k">for</span> j <span class="k">in</span> range(i+1, len(ns)):
+        g = math.gcd(ns[i], ns[j])
+        <span class="k">if</span> g != 1:
+            p = g; q_i = ns[i]//g; q_j = ns[j]//g
+            print(f<span class="s">"shared factor between key {i} and {j}: {g}"</span>)</pre></div>
+
+      <div class="callout warn"><span class="tag">RSA-CRT fault attack</span><p>If a signer using CRT-optimized RSA ever produces one faulty signature (bit-flip during computation, glitching), <code>gcd(s_faulty^e - m, N)</code> recovers a prime factor outright — one bad signature is enough to fully break the key.</p></div>
+    </section>
+
+    <section class="block cy" id="c4">
+      <div class="sec-head"><span class="num">04</span><h2>ECC &amp; Signatures</h2></div>
+      <p class="sec-sub">Elliptic-curve failures are almost always nonce or curve-validation mistakes, not the discrete log problem itself.</p>
+
+      <h3 class="sub-head" id="c4-ecdsa">ECDSA nonce reuse</h3>
+      <p>ECDSA signs with a per-signature secret nonce <code>k</code>. Reuse <code>k</code> across two signatures (or use a biased/predictable PRNG for it) and the private key falls out algebraically.</p>
+      <div class="codeblock"><div class="bar"><span class="lbl">python · recover private key from repeated nonce</span><span class="dots"><i></i><i></i><i></i></span></div>
+<pre><span class="c"># Two signatures (r, s1) and (r, s2) — same r means same k was used</span>
+<span class="k">def</span> recover_privkey(r, s1, s2, z1, z2, n):
+    k = ((z1 - z2) * pow(s1 - s2, -1, n)) % n
+    priv = ((s1 * k - z1) * pow(r, -1, n)) % n
+    <span class="k">return</span> priv, k</pre></div>
+      <p>Even without exact reuse, a nonce that leaks a few bits per signature across many signatures (biased LCG, truncated nonce) is solvable via the <b>Hidden Number Problem</b> using lattice reduction — see SageMath's LLL-based HNP solvers.</p>
+
+      <h3 class="sub-head" id="c4-curve">Invalid-curve &amp; weak-curve attacks</h3>
+      <div class="tblwrap"><table>
+        <thead><tr><th>Weakness</th><th>Attack</th></tr></thead>
+        <tbody>
+          <tr><td>Server doesn't validate the received point is on the expected curve</td><td>Invalid-curve attack — send points on a weaker curve chosen by the attacker, leak key bits via small-order subgroups</td></tr>
+          <tr><td>Curve order has small factors</td><td>Pohlig-Hellman — solve discrete log in each small subgroup, CRT-combine</td></tr>
+          <tr><td>Custom/unnamed curve parameters</td><td>Check curve order for smoothness with Sage's <code>factor(E.order())</code> before assuming it's secure</td></tr>
+          <tr><td>Same private key used for ECDH and signing</td><td>Cross-protocol key reuse can leak the key through whichever protocol is weaker</td></tr>
+        </tbody>
+      </table></div>
+    </section>
+
+    <section class="block cy" id="c5">
+      <div class="sec-head"><span class="num">05</span><h2>Hashing &amp; PRNGs</h2></div>
+      <p class="sec-sub">Where "just a hash" or "just random" is doing more work in the exploit than it looks.</p>
+
+      <h3 class="sub-head" id="c5-lenext">Hash length extension attack</h3>
+      <p>Merkle–Damgård hashes (MD5, SHA-1, SHA-256) leak internal state in their output — if a server computes <code>MAC = H(secret || message)</code> without a construction like HMAC, an attacker who knows <code>H(secret||message)</code> and <code>len(secret)</code> can forge <code>H(secret || message || padding || extra)</code> without ever knowing <code>secret</code>.</p>
+      <div class="codeblock"><div class="bar"><span class="lbl">bash · hashpump</span><span class="dots"><i></i><i></i><i></i></span></div>
+<pre>hashpump -s '<span class="s">6bc1e6...</span>' -d '<span class="s">original_message</span>' -a '<span class="s">;admin=true</span>' -k 16
+<span class="c"># outputs the new hash AND the exact byte string to send (with correct padding baked in)</span></pre></div>
+
+      <h3 class="sub-head" id="c5-crack">Offline cracking</h3>
+      <div class="tblwrap"><table>
+        <thead><tr><th>Tool</th><th>Best for</th></tr></thead>
+        <tbody>
+          <tr><td>hashcat</td><td>GPU-accelerated cracking, huge mode-number library (<code>-m 0</code> MD5, <code>-m 1000</code> NTLM, <code>-m 3200</code> bcrypt)</td></tr>
+          <tr><td>John the Ripper</td><td>CPU cracking, format auto-detection, good for esoteric/legacy hash formats</td></tr>
+          <tr><td>hashcat rule-based attacks</td><td>Mutate a base wordlist (leetspeak, capitalization, appended digits) — <code>best64.rule</code> is the standard starting point</td></tr>
+        </tbody>
+      </table></div>
+      <div class="codeblock"><div class="bar"><span class="lbl">bash</span><span class="dots"><i></i><i></i><i></i></span></div>
+<pre>hashcat -m 0 -a 0 hashes.txt rockyou.txt -r rules/best64.rule
+john --format=raw-md5 --wordlist=rockyou.txt hashes.txt</pre></div>
+
+      <h3 class="sub-head" id="c5-prng">PRNG prediction</h3>
+      <div class="tblwrap"><table>
+        <thead><tr><th>PRNG</th><th>Weakness</th><th>Recovery method</th></tr></thead>
+        <tbody>
+          <tr><td>Python <code>random</code> (Mersenne Twister)</td><td>Fully deterministic from 624 consecutive 32-bit outputs</td><td>Feed 624 outputs into a MT19937 state-cloner (e.g. <code>randcrack</code>), then predict all future outputs</td></tr>
+          <tr><td>LCG (<code>x = (a*x + c) mod m</code>)</td><td>Fully linear — 2-3 outputs plus known/guessed parameters solve it</td><td>Solve the linear congruence directly, or brute-force unknown <code>a</code>/<code>c</code>/<code>m</code> if small</td></tr>
+          <tr><td>Time-seeded PRNG (<code>srand(time(NULL))</code>)</td><td>Seed space is just Unix timestamps near generation time</td><td>Brute-force seeds within a plausible time window, regenerate and compare output</td></tr>
+          <tr><td><code>rand()</code>/glibc PRNG</td><td>Lower entropy, documented internal transition table</td><td>Reimplement glibc's algorithm exactly, or brute-force small seed space</td></tr>
+        </tbody>
+      </table></div>
+      <div class="codeblock"><div class="bar"><span class="lbl">python · randcrack — clone Python's MT19937 state</span><span class="dots"><i></i><i></i><i></i></span></div>
+<pre><span class="k">from</span> randcrack <span class="k">import</span> RandCrack
+rc = RandCrack()
+<span class="k">for</span> output <span class="k">in</span> observed_624_outputs:
+    rc.submit(output)
+<span class="k">print</span>(rc.predict_getrandbits(32))   <span class="c"># future outputs, fully predicted</span></pre></div>
+    </section>
+
+    <section class="block cy" id="c6">
+      <div class="sec-head"><span class="num">06</span><h2>Toolbox &amp; Workflow</h2></div>
+      <p class="sec-sub">The short list that resolves most crypto challenges without writing custom math.</p>
+
+      <h3 class="sub-head" id="c6-tools">Core tools</h3>
+      <div class="card-row">
+        <div class="card"><h5>RsaCtfTool</h5><p>Throws ~20 known RSA attacks at a given N/e/c automatically — always the first thing to try on an RSA challenge.</p></div>
+        <div class="card"><h5>SageMath</h5><p>Lattice reduction (LLL), elliptic curve arithmetic, polynomial roots (Coppersmith) — anything requiring real number theory.</p></div>
+        <div class="card"><h5>pycryptodome</h5><p>Python crypto primitives for scripting custom attacks — AES/RSA/hash building blocks with a clean API.</p></div>
+        <div class="card"><h5>CyberChef</h5><p>Fastest way to chain encodings/simple ciphers interactively before writing any code.</p></div>
+        <div class="card"><h5>hashcat / John</h5><p>Offline hash cracking — GPU (hashcat) or CPU/format-flexible (John).</p></div>
+        <div class="card"><h5>xortool / FeatherDuster</h5><p>xortool guesses XOR key length &amp; probable key; FeatherDuster auto-detects and breaks common weak crypto.</p></div>
+        <div class="card"><h5>factordb.com</h5><p>Check any modulus against a precomputed factorization database before spending compute on it yourself.</p></div>
+        <div class="card"><h5>PadBuster</h5><p>Automated CBC padding-oracle exploitation against a live decryption oracle.</p></div>
+      </div>
+
+      <h3 class="sub-head" id="c6-flow">Triage flowchart</h3>
+      <ol class="steps">
+        <li>Is it printable and structured (Base64/hex/etc.)? Decode fully before assuming encryption.</li>
+        <li>Is a key/modulus given? Identify the primitive (RSA parameters, AES mode, curve name) precisely.</li>
+        <li>For RSA: run RsaCtfTool with <code>--attack all</code> before anything manual.</li>
+        <li>For block ciphers: check for ECB pattern leakage, then check if you control any plaintext (bit-flipping / padding oracle).</li>
+        <li>For signatures: check for repeated/biased nonces across multiple signatures.</li>
+        <li>For "random" values: count how many outputs you can observe — 624 outputs breaks Python's <code>random</code> completely.</li>
+        <li>Nothing above fits? Re-read the challenge name and source for a hint at a named, unusual construction — CTF crypto challenges are rarely generic textbook RSA/AES without a twist.</li>
+      </ol>
+    </section>
+
+    <footer class="end">
+      <span>Offensive Fieldbook — reference compiled for CTF and authorized security work. Verify every technique against the target's actual platform/version before relying on it live.</span>
+      <span><a href="https://github.com/KhaledAlsaqabi/re-fieldbook">Source on GitHub</a></span>
+    </footer>
+  </main>
+</div>
+
+<script>
+(function(){
+  var root = document.documentElement;
+  var stored = null;
+  try { stored = localStorage.getItem('fieldbook-theme'); } catch(e){}
+  function apply(mode){
+    if(mode === 'light'){ root.setAttribute('data-theme','light'); }
+    else if(mode === 'dark'){ root.setAttribute('data-theme','dark'); }
+    else { root.removeAttribute('data-theme'); }
+    document.querySelectorAll('[data-theme-btn]').forEach(function(b){
+      b.classList.toggle('active', b.getAttribute('data-theme-btn') === mode);
+    });
+    try { localStorage.setItem('fieldbook-theme', mode); } catch(e){}
+  }
+  apply(stored || 'system');
+  document.querySelectorAll('[data-theme-btn]').forEach(function(b){
+    b.addEventListener('click', function(){ apply(b.getAttribute('data-theme-btn')); });
+  });
+})();
+</script>
+</body>
+</html>
