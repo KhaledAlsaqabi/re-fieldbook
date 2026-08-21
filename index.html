@@ -5,107 +5,80 @@
 <title>Offensive Fieldbook</title>
 <meta name="description" content="A dense reference for binary reverse engineering and applied cryptography — triage, tooling, hotkeys, attack patterns, and working exploit/solver code.">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🧩</text></svg>">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>♠️</text></svg>">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
 <style>
 :root{
-  --paper:#eef1f4; --paper-raised:#ffffff; --paper-sunk:#e4e9ed;
-  --text:#161b22; --text-soft:#4d5b68; --text-faint:#8291a0;
-  --line:#d3dae1; --line-strong:#b7c1cb;
-  --accent:#a8621a; --accent-soft:#c98a3e; --accent-wash:#f3e3d2;
-  --accent2:#3c6e97; --accent2-wash:#dbe8f1;
-  --shadow: 0 1px 2px rgba(20,30,40,.06), 0 20px 50px -20px rgba(20,30,40,.28);
-  --radius: 4px;
-}
-@media (prefers-color-scheme: dark){
-  :root:not([data-theme="light"]){
-    --paper:#12161c; --paper-raised:#171d25; --paper-sunk:#0e1217;
-    --text:#e4e9ee; --text-soft:#a7b3bf; --text-faint:#66727e;
-    --line:#28323d; --line-strong:#374252;
-    --accent:#e0964a; --accent-soft:#c9853f; --accent-wash:#2c2115;
-    --accent2:#7ab3dd; --accent2-wash:#132531;
-    --shadow: 0 1px 2px rgba(0,0,0,.4), 0 20px 50px -20px rgba(0,0,0,.7);
-  }
-}
-:root[data-theme="dark"]{
-  --paper:#12161c; --paper-raised:#171d25; --paper-sunk:#0e1217;
-  --text:#e4e9ee; --text-soft:#a7b3bf; --text-faint:#66727e;
-  --line:#28323d; --line-strong:#374252;
-  --accent:#e0964a; --accent-soft:#c9853f; --accent-wash:#2c2115;
-  --accent2:#7ab3dd; --accent2-wash:#132531;
-  --shadow: 0 1px 2px rgba(0,0,0,.4), 0 20px 50px -20px rgba(0,0,0,.7);
+  --paper:#ffffff;
+  --ink:#181c20; --ink-soft:#5a6169; --ink-faint:#93989e;
+  --line:#e3e5e8; --line-strong:#cfd3d7;
+  --red:#a83a30; --green:#2f6d52; --felt-wash:#eef4f0;
+  --shadow: 0 1px 2px rgba(20,20,20,.05), 0 24px 48px -22px rgba(20,20,20,.22);
+  --radius: 5px;
 }
 *{box-sizing:border-box;}
 body{
-  margin:0; background:var(--paper); color:var(--text);
+  margin:0; background:var(--paper); color:var(--ink);
   font-family:"IBM Plex Sans", ui-sans-serif, system-ui, sans-serif;
   min-height:100vh; display:flex; flex-direction:column;
 }
-code, .mono{ font-family:"IBM Plex Mono", ui-monospace, monospace; }
-:focus-visible{ outline:2px solid var(--accent); outline-offset:3px; }
+.mono{ font-family:"IBM Plex Mono", ui-monospace, monospace; }
+:focus-visible{ outline:2px solid var(--red); outline-offset:3px; }
 @media (prefers-reduced-motion: reduce){ *{animation:none !important; transition:none !important;} }
 
-.theme-toggle{ position:fixed; top:18px; right:18px; z-index:50; display:flex; gap:4px; background:var(--paper-raised); border:1px solid var(--line); border-radius:20px; padding:3px; box-shadow:var(--shadow); }
-.theme-toggle button{ font-family:"IBM Plex Mono"; font-size:11px; border:none; background:none; color:var(--text-faint); padding:5px 10px; border-radius:16px; cursor:pointer; }
-.theme-toggle button.active{ background:var(--accent-wash); color:var(--accent); }
+main{ flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; padding:70px 24px 40px; text-align:center; }
 
-/* faint blueprint grid backdrop */
-.grid-bg{
-  position:fixed; inset:0; z-index:0; pointer-events:none;
-  background-image:
-    linear-gradient(var(--line) 1px, transparent 1px),
-    linear-gradient(90deg, var(--line) 1px, transparent 1px);
-  background-size: 42px 42px;
-  opacity:.35;
-  mask-image: radial-gradient(ellipse 70% 60% at 50% 38%, black 10%, transparent 75%);
-}
+.mark-row{ display:flex; align-items:center; gap:8px; margin-bottom:26px; }
+.mark-row .suit{ font-size:14px; color:var(--red); }
+.mark-row .suit.b{ color:var(--ink); }
+.mark-row span.lbl{ font-family:"IBM Plex Mono"; font-size:11.5px; letter-spacing:.18em; text-transform:uppercase; color:var(--ink-faint); margin-left:6px; }
 
-main{ position:relative; z-index:1; flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; padding:80px 24px; text-align:center; }
+h1{ font-size:clamp(34px,6.4vw,58px); line-height:1.06; margin:0 0 18px; letter-spacing:-0.02em; text-wrap:balance; }
+h1 .hl{ color:var(--red); }
 
-.mark-row{ display:flex; align-items:center; gap:10px; margin-bottom:28px; }
-.mark-row .mark{ width:13px; height:13px; background:var(--accent); border-radius:2px; transform:rotate(45deg); }
-.mark-row .mark2{ width:13px; height:13px; background:var(--accent2); border-radius:2px; transform:rotate(45deg); margin-left:-4px; }
-.mark-row span{ font-family:"IBM Plex Mono"; font-size:12px; letter-spacing:.16em; text-transform:uppercase; color:var(--text-faint); }
+p.lede{ font-size:16.5px; color:var(--ink-soft); max-width:50ch; margin:0 0 46px; line-height:1.62; }
 
-h1{ font-size:clamp(38px,7vw,64px); line-height:1.04; margin:0 0 20px; letter-spacing:-0.02em; text-wrap:balance; }
-h1 em{ font-style:normal; color:var(--accent); }
-h1 .amp{ color:var(--accent2); font-weight:400; padding:0 6px; }
-
-p.lede{ font-size:17.5px; color:var(--text-soft); max-width:52ch; margin:0 0 44px; line-height:1.6; }
+/* scattered photo-card gallery */
+.gallery{ display:flex; gap:22px; justify-content:center; align-items:flex-end; margin-bottom:50px; flex-wrap:wrap; }
+.gallery figure{ margin:0; background:#fff; border:1px solid var(--line); border-radius:var(--radius); padding:8px 8px 12px; box-shadow:var(--shadow); width:168px; transition:transform .2s ease, box-shadow .2s ease; }
+.gallery figure:nth-child(1){ transform:rotate(-5deg); }
+.gallery figure:nth-child(2){ transform:rotate(2deg) translateY(-10px); }
+.gallery figure:nth-child(3){ transform:rotate(6deg); }
+.gallery figure:hover{ transform:rotate(0deg) translateY(-6px) scale(1.03); box-shadow:0 1px 2px rgba(20,20,20,.06), 0 30px 40px -18px rgba(20,20,20,.3); z-index:2; }
+.gallery img{ display:block; width:100%; aspect-ratio:3/4; object-fit:cover; border-radius:2px; }
+.gallery figcaption{ font-family:"IBM Plex Mono"; font-size:10.5px; color:var(--ink-faint); text-transform:uppercase; letter-spacing:.06em; margin-top:8px; }
 
 .cta{
   display:inline-flex; align-items:center; gap:12px;
-  background:var(--text); color:var(--paper);
+  background:var(--ink); color:#fff;
   font-family:"IBM Plex Sans"; font-weight:600; font-size:16px;
-  padding:16px 30px; border-radius:var(--radius); border:1px solid var(--text);
-  box-shadow:var(--shadow); transition:transform .15s ease, box-shadow .15s ease;
+  padding:16px 30px; border-radius:var(--radius); border:1px solid var(--ink);
+  box-shadow:var(--shadow); transition:transform .15s ease, background .15s ease;
 }
-.cta:hover{ transform:translateY(-2px); }
+.cta:hover{ background:var(--red); border-color:var(--red); transform:translateY(-2px); }
 .cta .arrow{ font-family:"IBM Plex Mono"; transition:transform .15s ease; }
 .cta:hover .arrow{ transform:translateX(3px); }
 
-.stat-row{ display:flex; gap:34px; margin-top:56px; flex-wrap:wrap; justify-content:center; }
-.stat{ font-size:11.5px; color:var(--text-faint); text-align:left; }
-.stat b{ display:block; font-family:"IBM Plex Mono"; font-size:20px; color:var(--text); font-variant-numeric:tabular-nums; }
+.stat-row{ display:flex; gap:34px; margin-top:54px; flex-wrap:wrap; justify-content:center; }
+.stat{ font-size:11.5px; color:var(--ink-faint); text-align:left; }
+.stat b{ display:block; font-family:"IBM Plex Mono"; font-size:19px; color:var(--ink); font-variant-numeric:tabular-nums; }
 
-footer{ position:relative; z-index:1; padding:22px 24px; text-align:center; font-size:12px; color:var(--text-faint); }
-footer a{ color:var(--text-faint); }
+footer{ padding:22px 24px; text-align:center; font-size:12px; color:var(--ink-faint); border-top:1px solid var(--line); }
+footer a{ color:var(--ink-faint); }
 </style>
 </head>
 <body>
 
-<div class="grid-bg" aria-hidden="true"></div>
-
-<div class="theme-toggle" role="group" aria-label="Theme">
-  <button data-theme-btn="system" class="active">Auto</button>
-  <button data-theme-btn="light">Light</button>
-  <button data-theme-btn="dark">Dark</button>
-</div>
-
 <main>
-  <div class="mark-row"><span class="mark"></span><span class="mark2"></span><span>Binary &amp; Cipher Reference</span></div>
-  <h1>The <em>Offensive</em><span class="amp">&amp;</span>Fieldbook</h1>
-  <p class="lede">Reverse engineering and applied cryptography, distilled into one working reference — triage steps, tool commands, hotkeys, attack patterns, and solver code you can paste straight into a terminal.</p>
+  <div class="mark-row"><span class="suit">♠</span><span class="suit b">♣</span><span class="suit">♥</span><span class="lbl">No Bluffing Allowed</span></div>
+  <h1>The Offensive <span class="hl">Fieldbook</span></h1>
+  <p class="lede">Reverse engineering and applied cryptography, distilled into one working reference — read every tell, compute the odds, never fold on a stripped binary or a bad cipher.</p>
+
+  <div class="gallery">
+    <figure><img src="assets/img1.jpg" alt="Dog holding a poker hand at the table, cigar in mouth" loading="lazy"><figcaption>the poker face</figcaption></figure>
+    <figure><img src="assets/img2.jpg" alt="Guinea pig smoking a pipe over a hand of cards and a beer" loading="lazy"><figcaption>the long game</figcaption></figure>
+    <figure><img src="assets/img3.jpg" alt="Chimpanzee in a visor and tie playing poker with chips" loading="lazy"><figcaption>the tell</figcaption></figure>
+  </div>
 
   <a class="cta" href="fieldbook.html">
     Open the Cheat Sheet <span class="arrow">→</span>
@@ -121,25 +94,5 @@ footer a{ color:var(--text-faint); }
 
 <footer>Offensive Fieldbook — reference for CTF and authorized security work · <a href="https://github.com/KhaledAlsaqabi/re-fieldbook">source on GitHub</a></footer>
 
-<script>
-(function(){
-  var root = document.documentElement;
-  var stored = null;
-  try { stored = localStorage.getItem('fieldbook-theme'); } catch(e){}
-  function apply(mode){
-    if(mode === 'light'){ root.setAttribute('data-theme','light'); }
-    else if(mode === 'dark'){ root.setAttribute('data-theme','dark'); }
-    else { root.removeAttribute('data-theme'); }
-    document.querySelectorAll('[data-theme-btn]').forEach(function(b){
-      b.classList.toggle('active', b.getAttribute('data-theme-btn') === mode);
-    });
-    try { localStorage.setItem('fieldbook-theme', mode); } catch(e){}
-  }
-  apply(stored || 'system');
-  document.querySelectorAll('[data-theme-btn]').forEach(function(b){
-    b.addEventListener('click', function(){ apply(b.getAttribute('data-theme-btn')); });
-  });
-})();
-</script>
 </body>
 </html>
