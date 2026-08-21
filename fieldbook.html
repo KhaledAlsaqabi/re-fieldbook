@@ -9,37 +9,15 @@
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
 <style>
 :root{
-  --paper:#eef1f4; --paper-raised:#ffffff; --paper-sunk:#e4e9ed;
-  --text:#161b22; --text-soft:#4d5b68; --text-faint:#8291a0;
-  --line:#d3dae1; --line-strong:#b7c1cb;
+  --paper:#ffffff; --paper-raised:#ffffff; --paper-sunk:#f2f3f5;
+  --text:#181c20; --text-soft:#565e66; --text-faint:#93989e;
+  --line:#e3e5e8; --line-strong:#cfd3d7;
   --accent:#a8621a; --accent-soft:#c98a3e; --accent-wash:#f3e3d2;
-  --accent2:#3c6e97; --accent2-wash:#dbe8f1;
-  --ok:#3f7d5c; --warn:#b5442e; --info:#3c6e97;
-  --code-bg:#e6ebef; --code-text:#1c2530; --code-key:#a8621a; --code-str:#3f7d5c; --code-com:#8291a0;
-  --shadow: 0 1px 2px rgba(20,30,40,.06), 0 8px 24px -12px rgba(20,30,40,.18);
+  --accent2:#a83a30; --accent2-wash:#f6e3e0;
+  --ok:#2f6d52; --warn:#a83a30; --info:#3c6e97;
+  --code-bg:#f2f3f5; --code-text:#1c2530; --code-key:#a8621a; --code-str:#2f6d52; --code-com:#93989e;
+  --shadow: 0 1px 2px rgba(20,20,20,.05), 0 8px 24px -12px rgba(20,20,20,.15);
   --radius: 3px;
-}
-@media (prefers-color-scheme: dark){
-  :root:not([data-theme="light"]){
-    --paper:#12161c; --paper-raised:#171d25; --paper-sunk:#0e1217;
-    --text:#e4e9ee; --text-soft:#a7b3bf; --text-faint:#66727e;
-    --line:#28323d; --line-strong:#374252;
-    --accent:#e0964a; --accent-soft:#c9853f; --accent-wash:#2c2115;
-    --accent2:#7ab3dd; --accent2-wash:#132531;
-    --ok:#6cb894; --warn:#e08065; --info:#7ab3dd;
-    --code-bg:#0d1116; --code-text:#dbe2e8; --code-key:#e0964a; --code-str:#7fc7a0; --code-com:#66727e;
-    --shadow: 0 1px 2px rgba(0,0,0,.4), 0 8px 24px -12px rgba(0,0,0,.6);
-  }
-}
-:root[data-theme="dark"]{
-  --paper:#12161c; --paper-raised:#171d25; --paper-sunk:#0e1217;
-  --text:#e4e9ee; --text-soft:#a7b3bf; --text-faint:#66727e;
-  --line:#28323d; --line-strong:#374252;
-  --accent:#e0964a; --accent-soft:#c9853f; --accent-wash:#2c2115;
-  --accent2:#7ab3dd; --accent2-wash:#132531;
-  --ok:#6cb894; --warn:#e08065; --info:#7ab3dd;
-  --code-bg:#0d1116; --code-text:#dbe2e8; --code-key:#e0964a; --code-str:#7fc7a0; --code-com:#66727e;
-  --shadow: 0 1px 2px rgba(0,0,0,.4), 0 8px 24px -12px rgba(0,0,0,.6);
 }
 *{box-sizing:border-box;}
 html{scroll-behavior:smooth;}
@@ -57,9 +35,15 @@ h1,h2,h3,h4{ font-family:"IBM Plex Sans", sans-serif; font-weight:700; text-wrap
 @media (prefers-reduced-motion: reduce){ html{scroll-behavior:auto;} }
 
 /* ---------- theme toggle ---------- */
-.theme-toggle{ position:fixed; top:14px; right:16px; z-index:50; display:flex; gap:4px; background:var(--paper-raised); border:1px solid var(--line); border-radius:20px; padding:3px; box-shadow:var(--shadow); }
-.theme-toggle button{ font-family:"IBM Plex Mono"; font-size:11px; border:none; background:none; color:var(--text-faint); padding:5px 10px; border-radius:16px; cursor:pointer; }
-.theme-toggle button.active{ background:var(--accent-wash); color:var(--accent); }
+.card-gallery{ display:flex; gap:16px; margin:30px 0 4px; flex-wrap:wrap; }
+.card-gallery figure{ margin:0; background:#fff; border:1px solid var(--line); border-radius:var(--radius); padding:6px 6px 9px; box-shadow:var(--shadow); width:104px; flex:none; }
+.card-gallery figure:nth-child(1){ transform:rotate(-4deg); }
+.card-gallery figure:nth-child(2){ transform:rotate(2deg) translateY(-6px); }
+.card-gallery figure:nth-child(3){ transform:rotate(5deg); }
+.card-gallery img{ display:block; width:100%; aspect-ratio:3/4; object-fit:cover; border-radius:2px; }
+.card-gallery figcaption{ font-family:"IBM Plex Mono"; font-size:9px; color:var(--text-faint); text-transform:uppercase; letter-spacing:.05em; margin-top:6px; text-align:center; }
+.foot-gallery{ display:flex; gap:6px; align-items:center; }
+.foot-gallery img{ width:30px; height:38px; object-fit:cover; border-radius:2px; border:1px solid var(--line); }
 
 /* ---------- shell ---------- */
 .shell{ display:flex; max-width:1360px; margin:0 auto; align-items:flex-start; }
@@ -183,11 +167,6 @@ footer.end a{ color:var(--text-faint); }
 </head>
 <body>
 
-<div class="theme-toggle" role="group" aria-label="Theme">
-  <button data-theme-btn="system" class="active">Auto</button>
-  <button data-theme-btn="light">Light</button>
-  <button data-theme-btn="dark">Dark</button>
-</div>
 
 <div class="shell">
   <aside class="toc">
@@ -293,6 +272,11 @@ footer.end a{ color:var(--text-faint); }
       <div class="parts">
         <a href="#s1"><span class="dot"></span>Jump to Reverse Engineering →</a>
         <a class="cy" href="#c1"><span class="dot"></span>Jump to Cryptography →</a>
+      </div>
+      <div class="card-gallery">
+        <figure><img src="assets/img1.jpg" alt="Dog playing poker with a cigar" loading="lazy"><figcaption>the poker face</figcaption></figure>
+        <figure><img src="assets/img2.jpg" alt="Guinea pig smoking a pipe over cards" loading="lazy"><figcaption>the long game</figcaption></figure>
+        <figure><img src="assets/img3.jpg" alt="Chimpanzee playing poker with chips" loading="lazy"><figcaption>the tell</figcaption></figure>
       </div>
     </div>
 
@@ -1061,30 +1045,15 @@ rc = RandCrack()
 
     <footer class="end">
       <span>Offensive Fieldbook — reference compiled for CTF and authorized security work. Verify every technique against the target's actual platform/version before relying on it live.</span>
-      <span><a href="https://github.com/KhaledAlsaqabi/re-fieldbook">Source on GitHub</a></span>
+      <span class="foot-gallery">
+        <img src="assets/img1.jpg" alt="">
+        <img src="assets/img2.jpg" alt="">
+        <img src="assets/img3.jpg" alt="">
+        <a href="https://github.com/KhaledAlsaqabi/re-fieldbook" style="margin-left:6px;">Source on GitHub</a>
+      </span>
     </footer>
   </main>
 </div>
 
-<script>
-(function(){
-  var root = document.documentElement;
-  var stored = null;
-  try { stored = localStorage.getItem('fieldbook-theme'); } catch(e){}
-  function apply(mode){
-    if(mode === 'light'){ root.setAttribute('data-theme','light'); }
-    else if(mode === 'dark'){ root.setAttribute('data-theme','dark'); }
-    else { root.removeAttribute('data-theme'); }
-    document.querySelectorAll('[data-theme-btn]').forEach(function(b){
-      b.classList.toggle('active', b.getAttribute('data-theme-btn') === mode);
-    });
-    try { localStorage.setItem('fieldbook-theme', mode); } catch(e){}
-  }
-  apply(stored || 'system');
-  document.querySelectorAll('[data-theme-btn]').forEach(function(b){
-    b.addEventListener('click', function(){ apply(b.getAttribute('data-theme-btn')); });
-  });
-})();
-</script>
 </body>
 </html>
